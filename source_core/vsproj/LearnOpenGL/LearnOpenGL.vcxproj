@@ -133,7 +133,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="basic_lighting\basic_materials.cpp" />
+    <ClCompile Include="basic_lighting\lighting_maps_1.cpp" />
     <ClCompile Include="share\glad.c" />
     <ClCompile Include="share\stb_image_def.cpp" />
   </ItemGroup>
