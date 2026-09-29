@@ -1,0 +1,51 @@
+# ==============================
+# Visual Studio
+# ==============================
+.vs/
+*.aps
+*.vcxproj.user
+*.sdf
+*.opensdf
+*.suo
+*.VC.db
+*.VC.VC.opendb
+
+# ==============================
+# 编译输出 / 中间文件
+# ==============================
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+Win32/
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.log
+*.tlog
+*.idb
+*.iobj
+*.ipdb
+*.pch
+*.ipch
+
+# 保留第三方共享库的预编译文件（glfw3.lib 等），不受上面 *.lib 规则忽略
+!shared_lib_include/lib/*.lib
+!shared_lib_include/lib/*.pdb
+
+# ==============================
+# CMake（如未来引入）
+# ==============================
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+
+# ==============================
+# 操作系统 / 编辑器杂项
+# ==============================
+Thumbs.db
+.DS_Store
