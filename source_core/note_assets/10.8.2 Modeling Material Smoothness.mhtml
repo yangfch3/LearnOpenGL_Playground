@@ -1,0 +1,728 @@
+From: <Saved by Blink>
+Snapshot-Content-Location: https://www.opengl.org/archives/resources/code/samples/sig99/advanced99/notes/node153.html
+Subject: 10.8.2 Modeling Material Smoothness
+Date: Tue, 29 Sep 2026 07:19:01 GMT
+MIME-Version: 1.0
+Content-Type: multipart/related;
+	type="text/html";
+	boundary="----MultipartBoundary--lzXhXCj43dKWVmHY6Rhpw1i3oOXSHZot9rGk5sD5I8----"
+
+
+------MultipartBoundary--lzXhXCj43dKWVmHY6Rhpw1i3oOXSHZot9rGk5sD5I8----
+Content-Type: text/html
+Content-ID: <frame-94B869C0E364EB05FCCCCDEBC2EB8C6E@mhtml.blink>
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://www.opengl.org/archives/resources/code/samples/sig99/advanced99/notes/node153.html
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><!--Converted with L=
+aTeX2HTML 98.1p1 release (March 2nd, 1998)
+originally by Nikos Drakos (nikos@cbl.leeds.ac.uk), CBLU, University of Lee=
+ds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others --><html><head><met=
+a http-equiv=3D"Content-Type" content=3D"text/html; charset=3DUTF-8">
+<title>10.8.2 Modeling Material Smoothness</title>
+<meta name=3D"description" content=3D"10.8.2 Modeling Material Smoothness">
+<meta name=3D"keywords" content=3D"notes">
+<meta name=3D"resource-type" content=3D"document">
+<meta name=3D"distribution" content=3D"global">
+
+<link rel=3D"STYLESHEET" href=3D"https://www.opengl.org/archives/resources/=
+code/samples/sig99/advanced99/notes/notes.css">
+<link rel=3D"previous" href=3D"https://www.opengl.org/archives/resources/co=
+de/samples/sig99/advanced99/notes/node148.html">
+<link rel=3D"up" href=3D"https://www.opengl.org/archives/resources/code/sam=
+ples/sig99/advanced99/notes/node147.html">
+<link rel=3D"next" href=3D"https://www.opengl.org/archives/resources/code/s=
+amples/sig99/advanced99/notes/node154.html">
+</head>
+<body>
+<!--Navigation Panel-->
+<a name=3D"tex2html2412" href=3D"https://www.opengl.org/archives/resources/=
+code/samples/sig99/advanced99/notes/node154.html">
+<img width=3D"37" height=3D"24" align=3D"BOTTOM" border=3D"0" alt=3D"next" =
+src=3D"https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/next_motif.gif=
+"></a>=20
+<a name=3D"tex2html2409" href=3D"https://www.opengl.org/archives/resources/=
+code/samples/sig99/advanced99/notes/node147.html">
+<img width=3D"26" height=3D"24" align=3D"BOTTOM" border=3D"0" alt=3D"up" sr=
+c=3D"https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/up_motif.gif"></=
+a>=20
+<a name=3D"tex2html2405" href=3D"https://www.opengl.org/archives/resources/=
+code/samples/sig99/advanced99/notes/node152.html">
+<img width=3D"63" height=3D"24" align=3D"BOTTOM" border=3D"0" alt=3D"previo=
+us" src=3D"https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/previous_m=
+otif.gif"></a>=20
+<a name=3D"tex2html2411" href=3D"https://www.opengl.org/archives/resources/=
+code/samples/sig99/advanced99/notes/node1.html">
+<img width=3D"65" height=3D"24" align=3D"BOTTOM" border=3D"0" alt=3D"conten=
+ts" src=3D"https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/contents_m=
+otif.gif"></a> =20
+<br>
+<b> Next:</b> <a name=3D"tex2html2413" href=3D"https://www.opengl.org/archi=
+ves/resources/code/samples/sig99/advanced99/notes/node154.html">10.9 Anisot=
+ropic Lighting</a>
+<b> Up:</b> <a name=3D"tex2html2410" href=3D"https://www.opengl.org/archive=
+s/resources/code/samples/sig99/advanced99/notes/node147.html">10.8 Choosing=
+ Material Properties</a>
+<b> Previous:</b> <a name=3D"tex2html2406" href=3D"https://www.opengl.org/a=
+rchives/resources/code/samples/sig99/advanced99/notes/node152.html">10.8.1.=
+4 Other Materials</a>
+<br>
+<br>
+<!--End of Navigation Panel-->
+
+<h3><a name=3D"SECTION000138200000000000000">
+10.8.2 Modeling Material Smoothness</a>
+</h3>
+
+<p>
+As mentioned before, the apparent smoothness of a material is a function
+of how strongly it reflects and the size of the specular highlight. This
+is affected by the overall magnitude of the <tt><font size=3D"-1">GL_AMBIEN=
+T</font></tt>,=20
+<tt><font size=3D"-1">GL_DIFFUSE</font></tt> and <tt><font size=3D"-1">GL_S=
+PECULAR</font></tt> parameters, and the value of
+<tt><font size=3D"-1">GL_SHININESS</font></tt>. Here are some
+heuristics that describe useful relationships between the magnitudes
+of these parameters:
+
+</p><p>
+</p><dl compact=3D"">
+<dt>1.
+</dt><dd>The spectral color of the <tt><font size=3D"-1">GL_AMBIENT</font><=
+/tt> and <tt><font size=3D"-1">GL_DIFFUSE</font></tt> parameters
+should be the same.
+</dd><dt>2.
+</dt><dd>The magnitudes of <tt><font size=3D"-1">GL_DIFFUSE</font></tt> and=
+ <tt><font size=3D"-1">GL_SPECULAR</font></tt> should sum to a value
+close to one. This helps prevent color value overflow.
+</dd><dt>3.
+</dt><dd>The value of <tt><font size=3D"-1">GL_SHININESS</font></tt> should=
+ increase as the magnitude of
+<tt><font size=3D"-1">GL_SPECULAR</font></tt> approaches one.
+</dd></dl>
+<p>
+No promise is made that these relationships, or the values in Table&nbsp;<a=
+ href=3D"https://www.opengl.org/archives/resources/code/samples/sig99/advan=
+ced99/notes/node153.html#tab:materials">7</a>
+will provide a perfect imitation of a given material. The empirical model
+used by OpenGL emphasizes performance, not physical exactness.
+
+</p><p>
+For an excellent description of material properties, see [<a href=3D"https:=
+//www.opengl.org/archives/resources/code/samples/sig99/advanced99/notes/nod=
+e411.html#materials">45</a>].
+
+</p><p>
+
+<br>
+</p><div align=3D"CENTER"><a name=3D"9189">&nbsp;</a>
+<table>
+<caption><strong>Table 7:</strong>
+Parameters for Common Materials</caption>
+<tbody><tr><td><table cellpadding=3D"3" border=3D"1">
+<tbody><tr><td align=3D"LEFT">Material</td>
+<td align=3D"LEFT"><tt> <font size=3D"-1">GL_AMBIENT</font></tt><font size=
+=3D"-1">  </font></td>
+<td align=3D"LEFT"><tt> <font size=3D"-1">GL_DIFFUSE</font></tt><font size=
+=3D"-1">  </font></td>
+<td align=3D"LEFT"><tt> <font size=3D"-1">GL_SPECULAR</font></tt><font size=
+=3D"-1"> </font></td>
+<td align=3D"LEFT"><tt> <font size=3D"-1">GL_SHININESS</font></tt><font siz=
+e=3D"-1"> </font></td>
+</tr>
+<tr><td align=3D"LEFT">Brass</td>
+<td align=3D"LEFT">0.329412</td>
+<td align=3D"LEFT">0.780392</td>
+<td align=3D"LEFT">0.992157</td>
+<td align=3D"LEFT">27.8974</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.223529</td>
+<td align=3D"LEFT">0.568627</td>
+<td align=3D"LEFT">0.941176</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.027451</td>
+<td align=3D"LEFT">0.113725</td>
+<td align=3D"LEFT">0.807843</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Bronze</td>
+<td align=3D"LEFT">0.2125</td>
+<td align=3D"LEFT">0.714</td>
+<td align=3D"LEFT">0.393548</td>
+<td align=3D"LEFT">25.6</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.1275</td>
+<td align=3D"LEFT">0.4284</td>
+<td align=3D"LEFT">0.271906</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.054</td>
+<td align=3D"LEFT">0.18144</td>
+<td align=3D"LEFT">0.166721</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Polished</td>
+<td align=3D"LEFT">0.25</td>
+<td align=3D"LEFT">0.4</td>
+<td align=3D"LEFT">0.774597</td>
+<td align=3D"LEFT">76.8</td>
+</tr>
+<tr><td align=3D"LEFT">Bronze</td>
+<td align=3D"LEFT">0.148</td>
+<td align=3D"LEFT">0.2368</td>
+<td align=3D"LEFT">0.458561</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.06475</td>
+<td align=3D"LEFT">0.1036</td>
+<td align=3D"LEFT">0.200621</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Chrome</td>
+<td align=3D"LEFT">0.25</td>
+<td align=3D"LEFT">0.4</td>
+<td align=3D"LEFT">0.774597</td>
+<td align=3D"LEFT">76.8</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.25</td>
+<td align=3D"LEFT">0.4</td>
+<td align=3D"LEFT">0.774597</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.25</td>
+<td align=3D"LEFT">0.4</td>
+<td align=3D"LEFT">0.774597</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Copper</td>
+<td align=3D"LEFT">0.19125</td>
+<td align=3D"LEFT">0.7038</td>
+<td align=3D"LEFT">0.256777</td>
+<td align=3D"LEFT">12.8</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.0735</td>
+<td align=3D"LEFT">0.27048</td>
+<td align=3D"LEFT">0.137622</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.0225</td>
+<td align=3D"LEFT">0.0828</td>
+<td align=3D"LEFT">0.086014</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Polished</td>
+<td align=3D"LEFT">0.2295</td>
+<td align=3D"LEFT">0.5508</td>
+<td align=3D"LEFT">0.580594</td>
+<td align=3D"LEFT">51.2</td>
+</tr>
+<tr><td align=3D"LEFT">Copper</td>
+<td align=3D"LEFT">0.08825</td>
+<td align=3D"LEFT">0.2118</td>
+<td align=3D"LEFT">0.223257</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.0275</td>
+<td align=3D"LEFT">0.066</td>
+<td align=3D"LEFT">0.0695701</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Gold</td>
+<td align=3D"LEFT">0.24725</td>
+<td align=3D"LEFT">0.75164</td>
+<td align=3D"LEFT">0.628281</td>
+<td align=3D"LEFT">51.2</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.1995</td>
+<td align=3D"LEFT">0.60648</td>
+<td align=3D"LEFT">0.555802</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.0745</td>
+<td align=3D"LEFT">0.22648</td>
+<td align=3D"LEFT">0.366065</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Polished</td>
+<td align=3D"LEFT">0.24725</td>
+<td align=3D"LEFT">0.34615</td>
+<td align=3D"LEFT">0.797357</td>
+<td align=3D"LEFT">83.2</td>
+</tr>
+<tr><td align=3D"LEFT">Gold</td>
+<td align=3D"LEFT">0.2245</td>
+<td align=3D"LEFT">0.3143</td>
+<td align=3D"LEFT">0.723991</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.0645</td>
+<td align=3D"LEFT">0.0903</td>
+<td align=3D"LEFT">0.208006</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Pewter</td>
+<td align=3D"LEFT">0.105882</td>
+<td align=3D"LEFT">0.427451</td>
+<td align=3D"LEFT">0.333333</td>
+<td align=3D"LEFT">9.84615</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.058824</td>
+<td align=3D"LEFT">0.470588</td>
+<td align=3D"LEFT">0.333333</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.113725</td>
+<td align=3D"LEFT">0.541176</td>
+<td align=3D"LEFT">0.521569</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+</tbody></table>
+<a name=3D"tab:materials">&nbsp;</a></td></tr>
+</tbody></table>
+</div>
+<br>
+<p>
+
+<br>
+</p><div align=3D"CENTER">
+<table cellpadding=3D"3" border=3D"1">
+<tbody><tr><td align=3D"LEFT">Material</td>
+<td align=3D"LEFT"><tt> <font size=3D"-1">GL_AMBIENT</font></tt><font size=
+=3D"-1">  </font></td>
+<td align=3D"LEFT"><tt> <font size=3D"-1">GL_DIFFUSE</font></tt><font size=
+=3D"-1">  </font></td>
+<td align=3D"LEFT"><tt> <font size=3D"-1">GL_SPECULAR</font></tt><font size=
+=3D"-1"> </font></td>
+<td align=3D"LEFT"><tt> <font size=3D"-1">GL_SHININESS</font></tt><font siz=
+e=3D"-1"> </font></td>
+</tr>
+<tr><td align=3D"LEFT">Silver</td>
+<td align=3D"LEFT">0.19225</td>
+<td align=3D"LEFT">0.50754</td>
+<td align=3D"LEFT">0.508273</td>
+<td align=3D"LEFT">51.2</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.19225</td>
+<td align=3D"LEFT">0.50754</td>
+<td align=3D"LEFT">0.508273</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.19225</td>
+<td align=3D"LEFT">0.50754</td>
+<td align=3D"LEFT">0.508273</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Polished</td>
+<td align=3D"LEFT">0.23125</td>
+<td align=3D"LEFT">0.2775</td>
+<td align=3D"LEFT">0.773911</td>
+<td align=3D"LEFT">89.6</td>
+</tr>
+<tr><td align=3D"LEFT">Silver</td>
+<td align=3D"LEFT">0.23125</td>
+<td align=3D"LEFT">0.2775</td>
+<td align=3D"LEFT">0.773911</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.23125</td>
+<td align=3D"LEFT">0.2775</td>
+<td align=3D"LEFT">0.773911</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Emerald</td>
+<td align=3D"LEFT">0.0215</td>
+<td align=3D"LEFT">0.07568</td>
+<td align=3D"LEFT">0.633</td>
+<td align=3D"LEFT">76.8</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.1745</td>
+<td align=3D"LEFT">0.61424</td>
+<td align=3D"LEFT">0.727811</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.0215</td>
+<td align=3D"LEFT">0.07568</td>
+<td align=3D"LEFT">0.633</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.55</td>
+<td align=3D"LEFT">0.55</td>
+<td align=3D"LEFT">0.55</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Jade</td>
+<td align=3D"LEFT">0.135</td>
+<td align=3D"LEFT">0.54</td>
+<td align=3D"LEFT">0.316228</td>
+<td align=3D"LEFT">12.8</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.2225</td>
+<td align=3D"LEFT">0.89</td>
+<td align=3D"LEFT">0.316228</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.1575</td>
+<td align=3D"LEFT">0.63</td>
+<td align=3D"LEFT">0.316228</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.95</td>
+<td align=3D"LEFT">0.95</td>
+<td align=3D"LEFT">0.95</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Obsidian</td>
+<td align=3D"LEFT">0.05375</td>
+<td align=3D"LEFT">0.18275</td>
+<td align=3D"LEFT">0.332741</td>
+<td align=3D"LEFT">38.4</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.05</td>
+<td align=3D"LEFT">0.17</td>
+<td align=3D"LEFT">0.328634</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.06625</td>
+<td align=3D"LEFT">0.22525</td>
+<td align=3D"LEFT">0.346435</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.82</td>
+<td align=3D"LEFT">0.82</td>
+<td align=3D"LEFT">0.82</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Pearl</td>
+<td align=3D"LEFT">0.25</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">0.296648</td>
+<td align=3D"LEFT">11.264</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.20725</td>
+<td align=3D"LEFT">0.829</td>
+<td align=3D"LEFT">0.296648</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.20725</td>
+<td align=3D"LEFT">0.829</td>
+<td align=3D"LEFT">0.296648</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.922</td>
+<td align=3D"LEFT">0.922</td>
+<td align=3D"LEFT">0.922</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Ruby</td>
+<td align=3D"LEFT">0.1745</td>
+<td align=3D"LEFT">0.61424</td>
+<td align=3D"LEFT">0.727811</td>
+<td align=3D"LEFT">76.8</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.01175</td>
+<td align=3D"LEFT">0.04136</td>
+<td align=3D"LEFT">0.626959</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.01175</td>
+<td align=3D"LEFT">0.04136</td>
+<td align=3D"LEFT">0.626959</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.55</td>
+<td align=3D"LEFT">0.55</td>
+<td align=3D"LEFT">0.55</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Turquoise</td>
+<td align=3D"LEFT">0.1</td>
+<td align=3D"LEFT">0.396</td>
+<td align=3D"LEFT">0.297254</td>
+<td align=3D"LEFT">12.8</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.18725</td>
+<td align=3D"LEFT">0.74151</td>
+<td align=3D"LEFT">0.30829</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.1745</td>
+<td align=3D"LEFT">0.69102</td>
+<td align=3D"LEFT">0.306678</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.8</td>
+<td align=3D"LEFT">0.8</td>
+<td align=3D"LEFT">0.8</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Black</td>
+<td align=3D"LEFT">0.0</td>
+<td align=3D"LEFT">0.01</td>
+<td align=3D"LEFT">0.50</td>
+<td align=3D"LEFT">32</td>
+</tr>
+<tr><td align=3D"LEFT">Plastic</td>
+<td align=3D"LEFT">0.0</td>
+<td align=3D"LEFT">0.01</td>
+<td align=3D"LEFT">0.50</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.0</td>
+<td align=3D"LEFT">0.01</td>
+<td align=3D"LEFT">0.50</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">Black</td>
+<td align=3D"LEFT">0.02</td>
+<td align=3D"LEFT">0.01</td>
+<td align=3D"LEFT">0.4</td>
+<td align=3D"LEFT">10</td>
+</tr>
+<tr><td align=3D"LEFT">Rubber</td>
+<td align=3D"LEFT">0.02</td>
+<td align=3D"LEFT">0.01</td>
+<td align=3D"LEFT">0.4</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">0.02</td>
+<td align=3D"LEFT">0.01</td>
+<td align=3D"LEFT">0.4</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+<tr><td align=3D"LEFT">&nbsp;</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">1.0</td>
+<td align=3D"LEFT">&nbsp;</td>
+</tr>
+</tbody></table>
+</div>
+<br><hr>
+<!--Navigation Panel-->
+<a name=3D"tex2html2412" href=3D"https://www.opengl.org/archives/resources/=
+code/samples/sig99/advanced99/notes/node154.html">
+<img width=3D"37" height=3D"24" align=3D"BOTTOM" border=3D"0" alt=3D"next" =
+src=3D"https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/next_motif.gif=
+"></a>=20
+<a name=3D"tex2html2409" href=3D"https://www.opengl.org/archives/resources/=
+code/samples/sig99/advanced99/notes/node147.html">
+<img width=3D"26" height=3D"24" align=3D"BOTTOM" border=3D"0" alt=3D"up" sr=
+c=3D"https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/up_motif.gif"></=
+a>=20
+<a name=3D"tex2html2405" href=3D"https://www.opengl.org/archives/resources/=
+code/samples/sig99/advanced99/notes/node152.html">
+<img width=3D"63" height=3D"24" align=3D"BOTTOM" border=3D"0" alt=3D"previo=
+us" src=3D"https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/previous_m=
+otif.gif"></a>=20
+<a name=3D"tex2html2411" href=3D"https://www.opengl.org/archives/resources/=
+code/samples/sig99/advanced99/notes/node1.html">
+<img width=3D"65" height=3D"24" align=3D"BOTTOM" border=3D"0" alt=3D"conten=
+ts" src=3D"https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/contents_m=
+otif.gif"></a> =20
+<br>
+<b> Next:</b> <a name=3D"tex2html2413" href=3D"https://www.opengl.org/archi=
+ves/resources/code/samples/sig99/advanced99/notes/node154.html">10.9 Anisot=
+ropic Lighting</a>
+<b> Up:</b> <a name=3D"tex2html2410" href=3D"https://www.opengl.org/archive=
+s/resources/code/samples/sig99/advanced99/notes/node147.html">10.8 Choosing=
+ Material Properties</a>
+<b> Previous:</b> <a name=3D"tex2html2406" href=3D"https://www.opengl.org/a=
+rchives/resources/code/samples/sig99/advanced99/notes/node152.html">10.8.1.=
+4 Other Materials</a>
+<!--End of Navigation Panel-->
+<address>
+<i>David Blythe</i>
+<br><i>1999-08-06</i>
+</address>
+
+
+
+</body></html>
+------MultipartBoundary--lzXhXCj43dKWVmHY6Rhpw1i3oOXSHZot9rGk5sD5I8----
+Content-Type: image/gif
+Content-Transfer-Encoding: base64
+Content-Location: https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/contents_motif.gif
+
+R0lGODlhQQAYAPEAAL+/v+fn529vb1sAACH5BAEAAAAALAAAAABBABgAAQLAjI+py+0Po5xNGICz
+3rz7D3KCFYTmiYbjlbauuZbvTGfxNuRDzX93lgPOdi+ij6QxYpQoZlOFXIJ0xp1uGcRmAdbslfvF
+/LhTKVZINpu3xHbSFk13lG509S1P10VxJ3qNV0W1p6fFx5KHE7iohgeYtDWWSEip5kfX+CfJxphX
++fiIKRanxUT1p0fHadcWBiDZEwsCC1Bre4ubq7vL2/tK6hssPKxLS3yMXAyczMwcMwIdLT1NXW19
+bR2Avc3d3V0AADs=
+
+------MultipartBoundary--lzXhXCj43dKWVmHY6Rhpw1i3oOXSHZot9rGk5sD5I8----
+Content-Type: image/gif
+Content-Transfer-Encoding: base64
+Content-Location: https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/previous_motif.gif
+
+R0lGODlhPwAYAPEAAL+/v+fn529vb1sAACH5BAEAAAAALAAAAAA/ABgAAQK6jI+py+0Po5xJGICz
+3rz7D2qCFYTmiX7jlbYuuJbATNf2jef6Tsf0AAzyhoOhEeCbFX/Lo/M5SwKaSqj1KKVOq83gUlvs
+Cqs/5ThKKjPNanKXvI3Lt9Rm1vtux/PfWr+s1ZMGZ1OHB/dXRxgGdJOVo4gTphYZaWY3OOe3KSn3
+58YZ+tgZaumJuGY5ehN4tsjUCLvnKnVlC1V7qzuUu+uL0/srjMYybEwcMKK8zNzs/Awd7ZwsXW19
+LV0AADs=
+
+------MultipartBoundary--lzXhXCj43dKWVmHY6Rhpw1i3oOXSHZot9rGk5sD5I8----
+Content-Type: image/gif
+Content-Transfer-Encoding: base64
+Content-Location: https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/up_motif.gif
+
+R0lGODlhGgAYAPEAAL+/v+fn529vb1sAACH5BAEAAAAALAAAAAAaABgAAQJijI+py61igJy0WiBg
+uPzm2IXSt4khOQ2WemrpKqISS9GcDNjzPvQUrsvNWDYgTPgauXYVYm1ibDKn0SeSupxefVdMdsjl
+hb0gUVBZDp3JJfPta7Lg4nJN5o7P6/GBvf8vUAAAOw==
+
+------MultipartBoundary--lzXhXCj43dKWVmHY6Rhpw1i3oOXSHZot9rGk5sD5I8----
+Content-Type: image/gif
+Content-Transfer-Encoding: base64
+Content-Location: https://www.opengl.org/usr/tmp/l/latex2html/icons.gif/next_motif.gif
+
+R0lGODlhJQAYAPEAAL+/v+fn529vb1sAACH5BAEAAAAALAAAAAAlABgAAQJ9jI+py+2/hAG02ovz
+FTLoD2LcFJbf6Jnq1lUD9q5iSw2xKwM3gOL7btr1ajrLzWYj+pKUYfH5/CmPFmeMeTVOcRUr94pk
+6qRdGrSYzYjPXp/ykmabgWJqlNucw39Y7bhMkqPiJFhCWAhyiKihuDhjwBEpOUlZaRlgmamZWQAA
+Ow==
+
+------MultipartBoundary--lzXhXCj43dKWVmHY6Rhpw1i3oOXSHZot9rGk5sD5I8----
+Content-Type: text/css
+Content-Transfer-Encoding: quoted-printable
+Content-Location: https://www.opengl.org/archives/resources/code/samples/sig99/advanced99/notes/notes.css
+
+@charset "utf-8";
+
+.MATH { font-family: "Century Schoolbook", serif; }
+
+.MATH i { font-family: "Century Schoolbook", serif; font-weight: bold; }
+
+.BOLDMATH { font-family: "Century Schoolbook", serif; font-weight: bold; }
+
+small.XTINY { font-size: xx-small; }
+
+small.TINY { font-size: x-small; }
+
+small.SCRIPTSIZE { font-size: smaller; }
+
+small.FOOTNOTESIZE { font-size: small; }
+
+small.SMALL { }
+
+big.LARGE { }
+
+big.XLARGE { font-size: large; }
+
+big.XXLARGE { font-size: x-large; }
+
+big.HUGE { font-size: larger; }
+
+big.XHUGE { font-size: xx-large; }
+------MultipartBoundary--lzXhXCj43dKWVmHY6Rhpw1i3oOXSHZot9rGk5sD5I8------
