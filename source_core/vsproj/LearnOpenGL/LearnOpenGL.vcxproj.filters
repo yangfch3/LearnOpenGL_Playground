@@ -21,7 +21,7 @@
     <ClCompile Include="share\stb_image_def.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="basic_lighting\phong_lighting_basic.cpp">
+    <ClCompile Include="basic_lighting\basic_materials.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
