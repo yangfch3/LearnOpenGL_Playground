@@ -133,7 +133,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="hello_model\model_loading.cpp" />
     <ClCompile Include="share\glad.c" />
     <ClCompile Include="share\stb_image_def.cpp" />
   </ItemGroup>

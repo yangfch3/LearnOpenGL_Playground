@@ -21,7 +21,7 @@
     <ClCompile Include="share\stb_image_def.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="hello_model\model_loading.cpp">
+    <ClCompile Include="advanced_gl\stencil_outline_2.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
