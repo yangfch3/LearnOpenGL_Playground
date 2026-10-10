@@ -21,7 +21,7 @@
     <ClCompile Include="share\stb_image_def.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="advanced_lighting\ssao.cpp">
+    <ClCompile Include="pbr\ibl_specular_textured.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
