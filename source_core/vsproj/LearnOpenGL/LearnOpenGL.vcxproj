@@ -133,7 +133,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="advanced_gl\normal_visualization.cpp" />
+    <ClCompile Include="advanced_gl\anti_aliasing_offscreen.cpp" />
     <ClCompile Include="share\glad.c" />
     <ClCompile Include="share\stb_image_def.cpp" />
   </ItemGroup>
