@@ -133,7 +133,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="extra_46\oit.cpp" />
     <ClCompile Include="share\glad.c" />
     <ClCompile Include="share\stb_image_def.cpp" />
   </ItemGroup>
