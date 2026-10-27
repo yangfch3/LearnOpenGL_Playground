@@ -1,0 +1,60 @@
+#version 460 core
+// GPU 视锥剔除 + 生成间接绘制命令：每个线程处理一个物体，
+// 可见则原子地给对应网格的 instanceCount +1，并把物体编号写进可见列表
+layout (local_size_x = 256) in;
+
+// std430 下 vec3 按 16 字节对齐、占 12 字节，紧随其后的 uint 正好塞进剩下的 4 字节，
+// 整个 struct 32 字节，与 C++ 的 { glm::vec4; glm::vec3; uint32_t; } 布局一致。
+// 坑：若 vec3 后面没有 4 字节标量填空，C++ 端就必须手动补 padding
+struct ObjectStatic
+{
+    vec4 posScale;   // xyz 基准位置，w 均匀缩放
+    vec3 color;
+    uint meshType;   // 0 立方体 / 1 球 / 2 四棱锥
+};
+
+// 与 glMultiDrawElementsIndirect 规定的命令结构逐字段一致（5 个 32 位整数，20 字节）
+struct DrawElementsIndirectCommand
+{
+    uint count;          // 索引数
+    uint instanceCount;  // 实例数 —— 本 shader 唯一修改的字段
+    uint firstIndex;     // 在 EBO 中的起始索引
+    int  baseVertex;     // 索引值偏移（多个网格共享一个 VBO）
+    uint baseInstance;   // VS 中 gl_BaseInstance 的值，这里用作可见列表的起始位置
+};
+
+layout (std430, binding = 0) readonly buffer ObjectStaticBuffer { ObjectStatic objects[]; };
+// 每帧由 CPU 写入的动态数据：xyz 位移，w 旋转角
+layout (std430, binding = 1) readonly buffer ObjectDynamicBuffer { vec4 dynamics[]; };
+// 同一个 buffer 对 compute 是 SSBO，对绘制是 GL_DRAW_INDIRECT_BUFFER
+layout (std430, binding = 2) buffer DrawCommandBuffer { DrawElementsIndirectCommand commands[]; };
+layout (std430, binding = 3) writeonly buffer VisibleBuffer { uint visibleIndices[]; };
+
+uniform vec4 frustumPlanes[6];
+uniform uint objectCount;
+
+// 三种网格包围球半径（单位尺寸下），须与 azdo.cpp 生成的网格一致
+const float meshRadius[3] = float[](0.87, 0.5, 0.75);
+
+void main()
+{
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= objectCount)
+        return;
+
+    ObjectStatic obj = objects[i];
+    vec3 center = obj.posScale.xyz + dynamics[i].xyz;
+    float radius = meshRadius[obj.meshType] * obj.posScale.w;
+
+    // 世界空间球-视锥测试（平面法线朝内）
+    for (int p = 0; p < 6; ++p)
+    {
+        if (dot(frustumPlanes[p].xyz, center) + frustumPlanes[p].w < -radius)
+            return;
+    }
+
+    // 同一网格的所有可见物体写进 [baseInstance, baseInstance + 该网格物体总数) 这段区间，
+    // 各网格区间互不重叠；区间内的顺序取决于线程竞争，每帧可能不同，但绘制结果与顺序无关
+    uint slot = atomicAdd(commands[obj.meshType].instanceCount, 1u);
+    visibleIndices[commands[obj.meshType].baseInstance + slot] = i;
+}

@@ -1,0 +1,47 @@
+#version 460 core
+// 一维工作组：每个线程更新一个粒子
+layout (local_size_x = 256) in;
+
+// SSBO（Shader Storage Buffer Object）：着色器可读写、大小可达显存上限、末尾可放不定长数组。
+// 对比 UBO：只读、通常限 64KB 左右、数组长度须写死。
+// std430 布局：vec4 按 16 字节对齐，与 C++ 端 struct { glm::vec4 pos, vel; } 逐字节对应
+struct Particle
+{
+    vec4 pos;   // xyz 位置，w 未用
+    vec4 vel;   // xyz 速度，w 未用
+};
+layout (std430, binding = 0) buffer ParticleBuffer
+{
+    Particle particles[];
+};
+
+uniform float dt;
+uniform vec3 attractor;
+uniform uint particleCount;
+
+void main()
+{
+    uint i = gl_GlobalInvocationID.x;
+    // 粒子数不一定是 256 的倍数
+    if (i >= particleCount)
+        return;
+
+    // 每个线程只读写自己的那个粒子，线程间没有数据依赖，可以原地更新。
+    // 若粒子要互相作用（如 N-body），读到的可能是别的线程已改写的新值，
+    // 需要双缓冲（读 A 写 B，下帧交换）或用 shared 内存分块
+    vec3 p = particles[i].pos.xyz;
+    vec3 v = particles[i].vel.xyz;
+
+    // 指向吸引点、按距离平方衰减的加速度：a = G * d / |d|^3。
+    // 分母加软化项 0.5（Plummer softening），粒子穿过吸引点时不会除零或速度爆炸
+    vec3 d = attractor - p;
+    float dist2 = dot(d, d) + 0.5;
+    vec3 acc = 30.0 * d / (dist2 * sqrt(dist2));
+
+    // 半隐式欧拉积分 + 阻尼
+    v = (v + acc * dt) * 0.995;
+    p += v * dt;
+
+    particles[i].pos.xyz = p;
+    particles[i].vel.xyz = v;
+}

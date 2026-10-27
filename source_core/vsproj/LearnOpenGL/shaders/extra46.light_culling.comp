@@ -1,0 +1,137 @@
+#version 460 core
+// Forward+ 光源分块剔除：屏幕切成 16x16 像素的 tile，一个工作组负责一个 tile，组内 256 线程 = tile 内 256 像素。
+// 输出每个 tile 「可能照到它」的光源列表，着色时每个像素只遍历所在 tile 的列表
+// 须与 extra46.forward_plus.fs 和 forward_plus.cpp 一致
+#define TILE_SIZE 16
+#define MAX_LIGHTS_PER_TILE 256
+
+layout (local_size_x = TILE_SIZE, local_size_y = TILE_SIZE) in;
+
+struct PointLight
+{
+    vec4 posRadius;   // xyz 世界坐标，w 影响半径
+    vec4 color;
+};
+layout (std430, binding = 0) readonly buffer LightBuffer { PointLight lights[]; };
+// 每个 tile 占 MAX_LIGHTS_PER_TILE 个槽位
+layout (std430, binding = 1) writeonly buffer TileLightIndexBuffer { uint tileLightIndices[]; };
+layout (std430, binding = 2) writeonly buffer TileLightCountBuffer { uint tileLightCounts[]; };
+
+// 深度预渲染得到的深度图
+layout (binding = 0) uniform sampler2D depthMap;
+
+uniform mat4 view;
+uniform mat4 inverseProjection;
+uniform ivec2 screenSize;
+uniform uint lightCount;
+uniform float nearPlane;
+uniform float farPlane;
+
+// shared：工作组内所有线程共享的片上内存，延迟远低于显存，大小有限（通常 32~48KB）
+shared uint tileMinDepth;
+shared uint tileMaxDepth;
+shared uint tileLightCount;
+shared uint tileLights[MAX_LIGHTS_PER_TILE];
+shared vec4 frustumPlanes[6];
+
+// [0,1] 深度 -> 视空间正距离（透视投影深度非线性，必须还原后才能和光源位置比较）
+float linearizeDepth(float d)
+{
+    float ndcZ = d * 2.0 - 1.0;
+    return (2.0 * nearPlane * farPlane) / (farPlane + nearPlane - ndcZ * (farPlane - nearPlane));
+}
+
+// NDC 的 xy 在远平面 (z = 1) 上反投影回视空间
+vec3 unprojectFar(vec2 ndc)
+{
+    vec4 v = inverseProjection * vec4(ndc, 1.0, 1.0);
+    return v.xyz / v.w;
+}
+
+void main()
+{
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    uvec2 tileId = gl_WorkGroupID.xy;
+    uint tileIndex = tileId.y * gl_NumWorkGroups.x + tileId.x;
+    uint threadIndex = gl_LocalInvocationIndex;   // 0..255
+
+    // ---- 阶段 0：初始化共享变量 ----
+    if (threadIndex == 0)
+    {
+        tileMinDepth = 0xFFFFFFFFu;
+        tileMaxDepth = 0u;
+        tileLightCount = 0u;
+    }
+    // barrier()：组内所有线程都执行到这里才继续，同时保证之前对 shared 的写入对组内可见
+    barrier();
+
+    // ---- 阶段 1：求 tile 内深度范围 ----
+    // 非负 float 的位模式按 uint 比较时大小顺序不变，所以可以用整数 atomicMin/Max（没有 float 版原子操作）
+    if (pixel.x < screenSize.x && pixel.y < screenSize.y)
+    {
+        float depth = linearizeDepth(texelFetch(depthMap, pixel, 0).r);
+        uint depthBits = floatBitsToUint(depth);
+        atomicMin(tileMinDepth, depthBits);
+        atomicMax(tileMaxDepth, depthBits);
+    }
+    barrier();
+
+    // ---- 阶段 2：构建 tile 的视锥（视空间，6 个平面，法线朝内）----
+    // 只需一个线程算，其余线程在下一个 barrier 等待
+    if (threadIndex == 0)
+    {
+        float minDepth = uintBitsToFloat(tileMinDepth);
+        float maxDepth = uintBitsToFloat(tileMaxDepth);
+
+        // tile 四角的 NDC（gl_FragCoord / texelFetch 坐标原点都在左下角，与 NDC 方向一致）
+        vec2 ndcMin = vec2(tileId * TILE_SIZE) / vec2(screenSize) * 2.0 - 1.0;
+        vec2 ndcMax = vec2((tileId + 1u) * TILE_SIZE) / vec2(screenSize) * 2.0 - 1.0;
+        vec3 corners[4] = vec3[](
+            unprojectFar(vec2(ndcMin.x, ndcMin.y)),
+            unprojectFar(vec2(ndcMax.x, ndcMin.y)),
+            unprojectFar(vec2(ndcMax.x, ndcMax.y)),
+            unprojectFar(vec2(ndcMin.x, ndcMax.y)));
+
+        // 四个侧面都经过相机原点，法线 = 相邻两角的叉乘；顺序 (i+1, i) 使法线朝向 tile 内部
+        for (int i = 0; i < 4; ++i)
+            frustumPlanes[i] = vec4(normalize(cross(corners[(i + 1) % 4], corners[i])), 0.0);
+        // 近/远面来自 tile 深度范围（视空间看向 -z，点 p 在内侧当 minDepth <= -p.z <= maxDepth）
+        frustumPlanes[4] = vec4(0.0, 0.0, -1.0, -minDepth);
+        frustumPlanes[5] = vec4(0.0, 0.0,  1.0,  maxDepth);
+    }
+    barrier();
+
+    // ---- 阶段 3：256 个线程分摊遍历所有光源，做球-视锥测试 ----
+    for (uint i = threadIndex; i < lightCount; i += TILE_SIZE * TILE_SIZE)
+    {
+        vec3 center = vec3(view * vec4(lights[i].posRadius.xyz, 1.0));
+        float radius = lights[i].posRadius.w;
+
+        // 球心到平面有符号距离 < -radius 即完全在外侧。
+        // 这是保守测试：视锥角落外的球可能被误判为可见（多算几盏灯，结果仍正确）
+        bool visible = true;
+        for (int p = 0; p < 6; ++p)
+        {
+            if (dot(frustumPlanes[p].xyz, center) + frustumPlanes[p].w < -radius)
+            {
+                visible = false;
+                break;
+            }
+        }
+        if (visible)
+        {
+            // atomicAdd 返回加之前的值，即本线程独占的槽位
+            uint slot = atomicAdd(tileLightCount, 1u);
+            if (slot < MAX_LIGHTS_PER_TILE)
+                tileLights[slot] = i;
+        }
+    }
+    barrier();
+
+    // ---- 阶段 4：组内线程并行把 shared 列表写回全局 SSBO ----
+    uint count = min(tileLightCount, uint(MAX_LIGHTS_PER_TILE));
+    if (threadIndex == 0)
+        tileLightCounts[tileIndex] = count;
+    for (uint i = threadIndex; i < count; i += TILE_SIZE * TILE_SIZE)
+        tileLightIndices[tileIndex * MAX_LIGHTS_PER_TILE + i] = tileLights[i];
+}

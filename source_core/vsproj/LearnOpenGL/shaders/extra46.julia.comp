@@ -1,0 +1,36 @@
+#version 460 core
+// 一个工作组 16x16 = 256 个线程（invocation），每个线程负责一个像素。
+// 工作组是调度单位：同组线程在同一个 SM/CU 上执行，可共享 shared 内存、用 barrier() 同步（本例用不到）
+layout (local_size_x = 16, local_size_y = 16) in;
+
+// image 与 sampler 的区别：image 按整数坐标直接读写某一级 mip，无过滤、无 wrap；
+// 格式限定符 rgba32f 必须与纹理内部格式（glTextureStorage2D 的 GL_RGBA32F）一致
+layout (rgba32f, binding = 0) uniform writeonly image2D imgOutput;
+
+uniform float time;
+
+void main()
+{
+    // gl_GlobalInvocationID = gl_WorkGroupID * gl_WorkGroupSize + gl_LocalInvocationID
+    ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(imgOutput);
+    // 图像尺寸不一定是 16 的倍数，最后一排工作组会有越界线程
+    if (pixel.x >= size.x || pixel.y >= size.y)
+        return;
+
+    // Julia 集：z = z^2 + c，统计逃逸前的迭代次数；c 随时间绕圆周变化
+    vec2 z = (vec2(pixel) - 0.5 * vec2(size)) / float(size.y) * 3.0;
+    vec2 c = 0.7885 * vec2(cos(time * 0.3), sin(time * 0.3));
+    const int MAX_ITER = 256;
+    int i = 0;
+    for (; i < MAX_ITER; ++i)
+    {
+        z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c;
+        if (dot(z, z) > 4.0)
+            break;
+    }
+
+    float t = float(i) / float(MAX_ITER);
+    vec3 color = i == MAX_ITER ? vec3(0.0) : 0.5 + 0.5 * cos(6.2831 * (t * 3.0 + vec3(0.0, 0.33, 0.67)));
+    imageStore(imgOutput, pixel, vec4(color, 1.0));
+}
