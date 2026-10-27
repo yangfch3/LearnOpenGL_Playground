@@ -50,10 +50,18 @@ vec3 unprojectFar(vec2 ndc)
 
 void main()
 {
+    // 内置变量：
+    //   gl_GlobalInvocationID  全局线程坐标 = 像素坐标
+    //   gl_WorkGroupID         工作组坐标   = tile 坐标
+    //   gl_NumWorkGroups       dispatch 的组数 = tile 行列数
+    //   gl_LocalInvocationIndex 组内线性编号 0..255
     ivec2 pixel = ivec2(gl_GlobalInvocationID.xy);
     uvec2 tileId = gl_WorkGroupID.xy;
     uint tileIndex = tileId.y * gl_NumWorkGroups.x + tileId.x;
-    uint threadIndex = gl_LocalInvocationIndex;   // 0..255
+    uint threadIndex = gl_LocalInvocationIndex;
+
+    // 整体思路：组内线程先协作求出 tile 的深度范围 -> 一个线程构建 tile 视锥 -> 全体分摊测试光源 -> 写回。
+    // 阶段之间用 barrier() 分隔，保证下一阶段读到的 shared 数据已由上一阶段写完
 
     // ---- 阶段 0：初始化共享变量 ----
     if (threadIndex == 0)
@@ -66,6 +74,8 @@ void main()
     barrier();
 
     // ---- 阶段 1：求 tile 内深度范围 ----
+    // 用于给 tile 视锥加上近/远面：只有落在 [最近, 最远] 几何体之间的灯才可能照到这些像素。
+    // 256 个线程同时改同一个 shared 变量，必须用原子操作，否则会互相覆盖
     // 非负 float 的位模式按 uint 比较时大小顺序不变，所以可以用整数 atomicMin/Max（没有 float 版原子操作）
     if (pixel.x < screenSize.x && pixel.y < screenSize.y)
     {
@@ -102,6 +112,7 @@ void main()
     barrier();
 
     // ---- 阶段 3：256 个线程分摊遍历所有光源，做球-视锥测试 ----
+    // 线程 k 处理第 k, k+256, k+512 ... 盏灯：1024 盏灯每线程只测 4 盏
     for (uint i = threadIndex; i < lightCount; i += TILE_SIZE * TILE_SIZE)
     {
         vec3 center = vec3(view * vec4(lights[i].posRadius.xyz, 1.0));

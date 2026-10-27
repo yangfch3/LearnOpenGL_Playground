@@ -123,6 +123,7 @@ int main()
     for (unsigned int i = 0; i < LIGHT_COUNT; ++i)
     {
         lightBase[i] = glm::vec4(uni(rng) * 70.0f - 35.0f, 0.3f + uni(rng) * 3.0f, uni(rng) * 70.0f - 35.0f, uni(rng) * 6.2831f);
+        // 随机色相，再把最亮通道缩放到 1.5：保留颜色、避免随机出很暗的灯
         glm::vec3 c(uni(rng), uni(rng), uni(rng));
         lights[i].color = glm::vec4(c / std::max(c.r, std::max(c.g, c.b)) * 1.5f, 1.0f);
         lights[i].posRadius.w = 3.0f + uni(rng) * 2.0f;
@@ -133,7 +134,8 @@ int main()
     glCreateBuffers(1, &lightBuffer);
     glNamedBufferStorage(lightBuffer, sizeof(PointLight) * LIGHT_COUNT, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
-    // 每块的光源索引表与计数：只由 GPU 读写，flags = 0
+    // 每块的光源索引表与计数：只由 GPU 读写，flags = 0。
+    // 1280x720 / 16 = 80x45 = 3600 块；索引表按每块固定 256 槽分配，简单但浪费（多数块远用不满）
     const unsigned int numTilesX = (SCR_WIDTH + TILE_SIZE - 1) / TILE_SIZE;
     const unsigned int numTilesY = (SCR_HEIGHT + TILE_SIZE - 1) / TILE_SIZE;
     const unsigned int numTiles = numTilesX * numTilesY;
@@ -143,6 +145,8 @@ int main()
     glCreateBuffers(1, &tileCountBuffer);
     glNamedBufferStorage(tileCountBuffer, sizeof(unsigned int) * numTiles, nullptr, 0);
 
+    // 绑定点是全局状态，与 program 无关：compute 和 FS 里同一个 binding 号看到的是同一块 buffer，
+    // 所以这里绑一次，后续两个 pass 都不用再绑
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, lightBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, tileIndexBuffer);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, tileCountBuffer);

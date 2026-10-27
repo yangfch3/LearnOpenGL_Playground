@@ -29,7 +29,7 @@ void main()
     ObjectStatic s = objects[obj];
     vec4 d = dynamics[obj];
 
-    // 绕 y 轴旋转 d.w
+    // 绕 y 轴旋转 d.w。GLSL 的 mat3 构造按列填充：三组分别是第 0、1、2 列
     float c = cos(d.w), sn = sin(d.w);
     mat3 rot = mat3(c, 0.0, -sn,  0.0, 1.0, 0.0,  sn, 0.0, c);
 

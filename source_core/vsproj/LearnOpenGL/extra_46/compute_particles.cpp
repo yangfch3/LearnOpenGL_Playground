@@ -63,7 +63,8 @@ int main()
     Shader renderShader("shaders/extra46.particles.vs", "shaders/extra46.particles.fs");
     ComputeShader computeShader("shaders/extra46.particles.comp");
 
-    // 初始状态：球壳内随机分布，带一点绕 y 轴的切向速度，形成旋涡
+    // 初始状态：半径 8 的球内随机分布（在立方体里随机取点，落在球外就重取），
+    // 速度 (-z, 0, x) 垂直于半径方向，即绕 y 轴的切向速度，形成旋涡
     std::vector<Particle> particles(PARTICLE_COUNT);
     std::mt19937 rng(7);
     std::uniform_real_distribution<float> uni(-1.0f, 1.0f);
@@ -132,6 +133,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
         renderShader.use();
         renderShader.setMat4("viewProj", projection * view);
+        // 空 VAO 也要绑：核心模式规定绘制时必须有 VAO；count 决定 VS 运行次数，gl_VertexID 取 0..count-1
         glBindVertexArray(emptyVAO);
         glDrawArrays(GL_POINTS, 0, PARTICLE_COUNT);
 

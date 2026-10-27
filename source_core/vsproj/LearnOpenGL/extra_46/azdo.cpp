@@ -209,10 +209,12 @@ int main()
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
     MeshRange meshes[MESH_TYPE_COUNT];
+    // 函数指针数组，下标即 meshType
     void (*generators[MESH_TYPE_COUNT])(std::vector<Vertex>&, std::vector<uint32_t>&) = { appendCube, appendSphere, appendPyramid };
     for (unsigned int t = 0; t < MESH_TYPE_COUNT; ++t)
     {
-        // 索引按网格内局部编号存储；绘制时 GPU 用 index + baseVertex 去取顶点
+        // 生成函数写出的是全局编号，这里减回网格内局部编号（从 0 开始）；
+        // 绘制时 GPU 用 index + baseVertex 去取顶点，同一份索引数据可以放在 VBO 的任意位置
         meshes[t].baseVertex = (int32_t)vertices.size();
         meshes[t].firstIndex = (uint32_t)indices.size();
         uint32_t vertexStart = (uint32_t)vertices.size();
@@ -238,6 +240,8 @@ int main()
     glVertexArrayAttribBinding(vao, 1, 0);
 
     // ---- 2. 物体静态数据：按网格类型连续存放，每种类型占一段 ----
+    // 前 1/3 是立方体、中间 1/3 是球、最后 1/3 是四棱锥；typeOffset[t] 记录每段起点，
+    // 之后作为该类型间接命令的 baseInstance，也就是可见列表中该类型的起始位置
     std::vector<ObjectStatic> objects(OBJECT_COUNT);
     uint32_t typeOffset[MESH_TYPE_COUNT] = {};
     std::mt19937 rng(3);
@@ -370,6 +374,7 @@ int main()
             {
                 const MeshRange& m = meshes[objects[i].meshType];
                 glUniform1ui(locNaiveObject, i);
+                // 绑定了 EBO 时，indices 指针参数实际含义是 EBO 内的字节偏移（历史遗留的写法）
                 glDrawElementsBaseVertex(GL_TRIANGLES, m.indexCount, GL_UNSIGNED_INT,
                                          (void*)(sizeof(uint32_t) * m.firstIndex), m.baseVertex);
             }

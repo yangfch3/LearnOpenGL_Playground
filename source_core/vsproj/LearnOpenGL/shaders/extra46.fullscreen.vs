@@ -5,7 +5,9 @@ out vec2 TexCoords;
 
 void main()
 {
-    vec2 pos = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);   // (0,0) (2,0) (0,2)
+    // 位运算取出 ID 的位：ID=0 -> (0,0)，ID=1 -> (2,0)，ID=2 -> (0,2)
+    vec2 pos = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+    // UV 范围 [0,2]，屏幕内可见部分恰好是 [0,1]
     TexCoords = pos;
     gl_Position = vec4(pos * 2.0 - 1.0, 0.0, 1.0);
 }

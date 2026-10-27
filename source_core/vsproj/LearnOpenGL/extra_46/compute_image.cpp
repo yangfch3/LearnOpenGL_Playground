@@ -74,7 +74,8 @@ int main()
     glTextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // 同一张纹理两种用法：作为 image 绑到 image 单元 0 给 compute 写，作为 sampler 绑到纹理单元 0 给 FS 读。
-    // image 单元和纹理单元是两套独立的绑定点
+    // image 单元和纹理单元是两套独立的绑定点。
+    // 参数：image 单元, 纹理, mip 级别, 是否绑定整个数组/立方体(layered), 层号, 访问方式, 格式
     glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
     glBindTextureUnit(0, texture);
 
@@ -92,7 +93,8 @@ int main()
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, true);
 
-        // 1. 计算：工作组数向上取整，保证覆盖每个像素
+        // 1. 计算：参数是工作组数量（不是线程数），向上取整保证覆盖每个像素。
+        // 1280x720 -> 80x45 个组，每组 16x16 线程，共 921600 个线程
         computeShader.use();
         computeShader.setFloat("time", (float)glfwGetTime());
         glDispatchCompute((SCR_WIDTH + LOCAL_SIZE - 1) / LOCAL_SIZE, (SCR_HEIGHT + LOCAL_SIZE - 1) / LOCAL_SIZE, 1);

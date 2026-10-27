@@ -125,6 +125,7 @@ int main()
 
     // ---- FBO ----
     // 两个 FBO 共享同一张深度纹理：透明 pass 要用不透明物体的深度做遮挡测试
+    // opaqueColor 用 RGBA16F 是为了与 accum 一致、合成时不损失精度；本例颜色都在 [0,1]，换 RGBA8 也行
     unsigned int opaqueColor, depthTex, accumTex, revealTex;
     glCreateTextures(GL_TEXTURE_2D, 1, &opaqueColor);
     glTextureStorage2D(opaqueColor, 1, GL_RGBA16F, SCR_WIDTH, SCR_HEIGHT);

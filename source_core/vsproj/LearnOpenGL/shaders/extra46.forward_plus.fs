@@ -61,6 +61,8 @@ void main()
     }
     else
     {
+        // 两级间接：先查本 tile 列表里的第 i 项得到光源编号，再去光源数组取数据。
+        // 同一 tile 的像素读同一份列表，访问连续，缓存命中率高
         for (uint i = 0; i < count; ++i)
             color += shadePointLight(lights[tileLightIndices[tileIndex * MAX_LIGHTS_PER_TILE + i]], N, V);
     }
