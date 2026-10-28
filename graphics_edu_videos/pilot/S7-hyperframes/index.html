@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="assets/data/s7.js"></script>
+    <script src="assets/text/zh-CN.js"></script>
+    <style>
+      @font-face {
+        font-family: "Noto Sans SC";
+        src: url("assets/fonts/NotoSansSC-VF.ttf") format("truetype");
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #11161d;
+        --line: #2e3947;
+        --ink-dim: #9aa6b8;
+        --ink: #edf1f7;
+        --gl-orange: #ff8033;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+      #root { width: 100%; height: 100%; font-family: "Noto Sans SC", sans-serif; color: var(--ink); }
+      #stage { position: absolute; inset: 0; }
+      #grid, #outline { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+      .ghost { position: absolute; border: 3px dashed rgba(255, 128, 51, 0.6); border-radius: 4px; opacity: 0; }
+      .px { position: absolute; background: var(--gl-orange); border-radius: 4px; opacity: 0; overflow: hidden; }
+      .glow { position: absolute; inset: 0; background: #fff; opacity: 0; }
+      .dot { position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--ink-dim); }
+      #scan {
+        position: absolute; opacity: 0;
+        background: rgba(237, 241, 247, 0.07);
+        border-top: 3px solid var(--ink-dim); border-bottom: 3px solid var(--ink-dim);
+      }
+      .count {
+        position: absolute; width: 80px; height: 56px; line-height: 56px;
+        font: 500 40px "JetBrains Mono", monospace; color: var(--ink); opacity: 0;
+      }
+      .count.zero { color: var(--ink-dim); }
+      #note {
+        position: absolute; left: 1500px; top: 120px; white-space: pre-line;
+        font-size: 36px; font-weight: 500; line-height: 1.4; color: var(--ink-dim);
+      }
+      #caption {
+        position: absolute; left: 0; width: 1920px; top: 836px; text-align: center;
+        font-size: 44px; font-weight: 400; line-height: 1.4; opacity: 0;
+      }
+      #formula {
+        position: absolute; left: 0; width: 1920px; top: 816px; text-align: center;
+        font: 500 44px "JetBrains Mono", monospace; opacity: 0;
+      }
+      #total {
+        position: absolute; left: 0; width: 1920px; top: 892px; text-align: center;
+        font-size: 44px; font-weight: 500; opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="26.1" data-width="1920" data-height="1080">
+      <div id="stage" class="clip" data-start="0" data-duration="26.1" data-track-index="0">
+        <svg id="grid"></svg>
+        <div id="ghosts"></div>
+        <div id="scan"></div>
+        <div id="dots"></div>
+        <div id="cells" data-layout-allow-overlap></div>
+        <svg id="outline"></svg>
+        <div id="counts"></div>
+        <div id="note"></div>
+        <div id="caption" data-hold></div>
+        <div id="formula"></div>
+        <div id="total"></div>
+      </div>
+      <audio id="sfx" class="clip" data-start="0" data-duration="26.1" data-track-index="1" data-volume="1" src="assets/sfx/s7.wav"></audio>
+    </div>
+    <script>
+      const D = window.S7, T = window.TEXT, C = D.cell;
+      const GX = 960 - 8 * C - 60, GY = 120;
+      const sx = (x) => GX + x * C, sy = (y) => GY + (12 - y) * C;
+      const NS = "http://www.w3.org/2000/svg";
+      const el = (tag, cls, css) => Object.assign(document.createElement(tag), { className: cls, style: css });
+      const SHADOW_UP = "0px 18px 22px rgba(0,0,0,0.55)", SHADOW_DOWN = "0px 0px 0px rgba(0,0,0,0)";
+
+      const grid = document.getElementById("grid");
+      const line = (x1, y1, x2, y2) => {
+        const l = document.createElementNS(NS, "line");
+        Object.entries({ x1, y1, x2, y2, stroke: "#2e3947", "stroke-width": 2 }).forEach(([k, v]) => l.setAttribute(k, v));
+        grid.appendChild(l);
+      };
+      for (let i = 0; i <= 16; i++) line(sx(i), sy(0), sx(i), sy(12));
+      for (let j = 0; j <= 12; j++) line(sx(0), sy(j), sx(16), sy(j));
+
+      const poly = document.createElementNS(NS, "polygon");
+      poly.setAttribute("points", D.verts.map(([x, y]) => `${sx(x)},${sy(y)}`).join(" "));
+      Object.entries({ fill: "none", stroke: "#edf1f7", "stroke-width": 3, "stroke-linejoin": "round" }).forEach(([k, v]) => poly.setAttribute(k, v));
+      document.getElementById("outline").appendChild(poly);
+
+      const dots = document.getElementById("dots");
+      for (let j = 0; j < 12; j++)
+        for (let i = 0; i < 16; i++)
+          dots.appendChild(el("div", "dot", `left:${sx(i + 0.5) - 6}px;top:${sy(j + 0.5) - 6}px`));
+
+      const scan = document.getElementById("scan");
+      scan.style.cssText = `left:${sx(0)}px;top:${sy(1)}px;width:${16 * C}px;height:${C}px`;
+      const scanY = (j) => sy(j + 1) - sy(1);
+
+      const tl = gsap.timeline({ paused: true });
+      const ghosts = document.getElementById("ghosts"), cells = document.getElementById("cells"), counts = document.getElementById("counts");
+      const allGlows = [];
+      const glowSweep = (glows, at, step, first) =>
+        glows.forEach((g, k) => {
+          const t0 = at + k * step;
+          tl.fromTo(g, { opacity: 0 }, { opacity: 0.45, duration: 0.1, ease: "power2.out", immediateRender: first }, t0);
+          tl.to(g, { opacity: 0, duration: 0.3, ease: "power2.in" }, t0 + 0.1);
+        });
+      const addCount = (row, cls) => {
+        const c = el("div", cls, `left:${sx(16) + 28}px;top:${sy(row.j + 1)}px`);
+        c.textContent = String(row.count);
+        counts.appendChild(c);
+        tl.fromTo(c, { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(3)" }, row.countAt);
+      };
+
+      tl.fromTo(scan, { opacity: 0, y: scanY(D.rows[0].j) }, { opacity: 1, duration: D.scanIn, ease: "power2.out" }, 0);
+      D.rows.forEach((row, r) => {
+        if (r > 0) tl.to(scan, { y: scanY(row.j), duration: D.scanIn, ease: "power2.inOut" }, row.start);
+        const glows = [];
+        row.pixels.forEach((p) => {
+          const box = `left:${sx(p.i) + 4}px;top:${sy(row.j + 1) + 4}px;width:${C - 8}px;height:${C - 8}px`;
+          const ghost = el("div", "ghost", box);
+          ghosts.appendChild(ghost);
+          const px = el("div", "px", box);
+          const glow = el("div", "glow", "");
+          px.appendChild(glow);
+          cells.appendChild(px);
+          glows.push(glow);
+          allGlows.push(glow);
+          const up = -p.h * C;
+          tl.fromTo(ghost, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, p.appear);
+          tl.fromTo(px,
+            { opacity: 0, y: up + 14, scale: 0.7, transformOrigin: "50% 100%", boxShadow: SHADOW_UP },
+            { opacity: 1, y: up, scale: 1.12, duration: D.appearDur, ease: "back.out(2)" }, p.appear);
+          tl.fromTo(px, { y: up }, { y: up - 6, duration: p.drop - p.appear - D.appearDur, ease: "sine.inOut", immediateRender: false }, p.appear + D.appearDur);
+          tl.fromTo(px,
+            { y: up - 6, scale: 1.12, boxShadow: SHADOW_UP },
+            { y: 0, scale: 1, boxShadow: SHADOW_DOWN, duration: p.land - p.drop, ease: "power2.in", immediateRender: false }, p.drop);
+          tl.to(ghost, { opacity: 0, duration: 0.12 }, p.land);
+          const squash = p.accent ? { scaleX: 1.2, scaleY: 0.72 } : { scaleX: 1.14, scaleY: 0.8 };
+          tl.fromTo(px, { scaleX: 1, scaleY: 1 }, { ...squash, duration: 0.06, ease: "power2.out", immediateRender: false }, p.land);
+          tl.fromTo(px, squash, { scaleX: 1, scaleY: 1, duration: p.accent ? 0.7 : 0.45, ease: "elastic.out(1, 0.35)", immediateRender: false }, p.land + 0.06);
+        });
+        glowSweep(glows, row.accentAt + 0.08, 0.035, true);
+        addCount(row, "count");
+      });
+
+      const E = D.empty;
+      tl.to(scan, { y: scanY(E.j), duration: D.scanIn, ease: "power2.inOut" }, E.start);
+      addCount(E, "count zero");
+      const caption = document.getElementById("caption");
+      caption.textContent = T["s7.empty"];
+      tl.fromTo(caption, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, D.captionAt);
+
+      tl.to([caption, scan], { opacity: 0, duration: 0.3, ease: "power2.in" }, D.outAt);
+      const formula = document.getElementById("formula");
+      formula.textContent = D.formula;
+      tl.fromTo(formula, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, D.formulaAt);
+      const total = document.getElementById("total");
+      total.textContent = T["s7.total"].replace("{n}", D.total);
+      tl.fromTo(total, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, D.sumLineAt);
+      glowSweep(allGlows, D.sumAt, 0.02, false);
+
+      document.getElementById("note").textContent = T["s7.note"];
+      tl.set({}, {}, D.duration);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

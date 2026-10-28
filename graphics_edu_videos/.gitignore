@@ -11,6 +11,7 @@ renders/
 media/
 out/
 .debug/
+.hyperframes/
 *.mp4
 *.mov
 *.webm
