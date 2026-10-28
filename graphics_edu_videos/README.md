@@ -6,7 +6,9 @@
 
 ```
 graphics_edu_videos/
-├─ docs/        预研、工程约定、风格规范、系列大纲、试点
+├─ docs/        系列级：预研、工程约定、风格规范、系列大纲
+│  ├─ 试点/            试点计划、探针
+│  └─ 1.1_你好三角形/  每集一个目录：知识点、分镜
 ├─ pilot/       试点 A 段探针，每个「探针 × 工具」一个子目录，如 S1-hyperframes/、S1-manim/
 ├─ episodes/    成片工程，每集一个 HyperFrames 项目，如 ep1.1-hello-triangle/
 ├─ shared/      跨集复用：样式变量、字体、组件、WGSL、Manim 公共模块（引用方式在试点 A 段定）
