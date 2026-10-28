@@ -1,6 +1,9 @@
 # 临时文件（探针、中间态）
 Temp/
 
+# 各项目指向 shared/ 的目录联接（tools/link-shared.cmd 创建）
+**/assets/shared
+
 # 依赖
 node_modules/
 .venv/
