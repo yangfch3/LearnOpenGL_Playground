@@ -71,8 +71,8 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\Playground\LearnOpenGL\shared_lib_include\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\Playground\LearnOpenGL\shared_lib_include\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>E:\Playground\LearnOpenGL\shared_lib_include\include;$(IncludePath)</IncludePath>
+    <LibraryPath>E:\Playground\LearnOpenGL\shared_lib_include\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -133,6 +133,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="extra_46\forward_plus.cpp" />
     <ClCompile Include="share\glad.c" />
     <ClCompile Include="share\stb_image_def.cpp" />
   </ItemGroup>
