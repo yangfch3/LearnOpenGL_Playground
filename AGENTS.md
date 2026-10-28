@@ -35,3 +35,10 @@
 - 禁止注释携带 Task/Spec/原始需求等易过时信息
 - 多种方式可选时，保证交付质量前提下选用节省 Token 的
 
+## 图形学教学视频工程
+
+在 `graphics_edu_videos/` 下工作前先读：
+
+- [工程约定](graphics_edu_videos/docs/工程约定.md)：目录、临时文件、工具调用、已知问题
+- [风格规范](graphics_edu_videos/docs/风格规范.md)：配色、字体、版式、动效、阅读时长
+- [预研](graphics_edu_videos/docs/基于LearnOpenGL的图形学教学视频预研.md)：目标与受众、工具候选、音效、输出规格

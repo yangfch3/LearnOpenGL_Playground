@@ -1,0 +1,18 @@
+# 临时文件（探针、中间态）
+Temp/
+
+# 依赖
+node_modules/
+.venv/
+__pycache__/
+
+# 渲染产物（可由源码重新生成，不入库）
+renders/
+media/
+out/
+.debug/
+*.mp4
+*.mov
+*.webm
+*.mkv
+*.gif

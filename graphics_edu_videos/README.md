@@ -1,0 +1,58 @@
+# 图形学教学视频
+
+基于 LearnOpenGL 的无旁白图形学教学视频工程。
+
+## 目录
+
+```
+graphics_edu_videos/
+├─ docs/        预研、工程约定、风格规范、系列大纲、试点
+├─ pilot/       试点 A 段探针，每个「探针 × 工具」一个子目录，如 S1-hyperframes/、S1-manim/
+├─ episodes/    成片工程，每集一个 HyperFrames 项目，如 ep1.1-hello-triangle/
+├─ shared/      跨集复用：样式变量、字体、组件、WGSL、Manim 公共模块（引用方式在试点 A 段定）
+├─ tools/       辅助脚本
+├─ Temp/        临时文件：探针、草稿、中间态（不入库）
+├─ package.json / package-lock.json        锁定 HyperFrames
+└─ pyproject.toml / uv.lock / .python-version  锁定 Python 与 Manim
+```
+
+- 不入库：`Temp/`、渲染产物（`renders/`、`media/`、`out/`、全部视频文件）、`node_modules/`、`.venv/`
+- 所有临时操作放 `Temp/`，不用系统临时目录
+- Git LFS：字体、WAV
+- 目录按需创建，用到再建
+
+## 环境基线
+
+目标：在同级 GPU、同软件版本下复现出片。
+
+| 项 | 基线 | 锁定方式 |
+|---|---|---|
+| 系统 | Windows 11 x64 | 记录 |
+| GPU | 桌面独显，D3D12 下可创建 WebGPU 硬件 device（非回退 adapter）；参考档位 NVIDIA Ada（RTX 40 系），驱动 560.94 | 记录 |
+| Node.js | 22.x | 记录 |
+| HyperFrames | 0.8.210；agent skills 取同版本 tag | `package-lock.json`、`.kiro/skills/` |
+| 渲染浏览器 | chrome-headless-shell 152.0.7977.30（版本写死在 HyperFrames 内，系统 Chrome 不参与出片） | `npx hyperframes browser ensure` |
+| FFmpeg | 9.0.2（gyan.dev full build） | 记录 |
+| Python / Manim CE | 3.12 / 0.22.1；包镜像见 `pyproject.toml` | `uv.lock` |
+| LaTeX | MiKTeX 25.12（xelatex + ctex，缺包自动安装） | 记录 |
+| 原生 OpenGL | VS 2026，MSVC v145 | 仓库 vcxproj |
+
+复现等级：
+
+- 同 GPU 架构 + 同驱动 + 同软件版本：期望逐帧一致（实测：WebGPU 合成同机渲染两次，MP4 字节一致）
+- 跨 GPU 或驱动：只保证视觉一致，光栅化与 WebGPU 输出可能有像素级差异
+- 升级任一「记录」项须同步改本表；Docker / Lambda 无 GPU，不用于含 WebGPU 的镜头
+
+## 环境复现
+
+1. 安装系统级工具：Node.js 22、FFmpeg（`winget install --id Gyan.FFmpeg -e`）、MiKTeX（开启缺包自动安装）、uv
+2. 在本目录执行：
+   - `npm ci`
+   - `npx hyperframes browser ensure`：下载 HyperFrames 指定版本的 headless shell
+   - `uv sync`
+   - `npx hyperframes telemetry disable`
+3. 自检：`npx hyperframes doctor`（Docker 一项可忽略）
+
+## 约定、已知问题与升级
+
+见[工程约定](docs/工程约定.md)。
