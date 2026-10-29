@@ -47,3 +47,4 @@
 - [工程约定](graphics_edu_videos/docs/工程约定.md)：目录、临时文件、工具调用、已知问题、文本与多语言
 - [风格规范](graphics_edu_videos/docs/风格规范.md)：配色、字体、版式、动效、阅读时长
 - [预研](graphics_edu_videos/docs/基于LearnOpenGL的图形学教学视频预研.md)：目标与受众、工具候选、音效、输出规格
+- 做剧情片时加读 [剧情片优秀经验沉淀](graphics_edu_videos/docs/剧情片优秀经验沉淀.md)：选题与结构、世界、镜头、角色动画、防穿模、声音、流程

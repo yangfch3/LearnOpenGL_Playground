@@ -34,6 +34,51 @@ def thump(amp, f0=90):
     return amp * np.sin(2 * np.pi * (f0 - 40 * tt) * tt) * np.exp(-tt / 0.06)
 
 
+def tt(d):
+    return np.arange(int(d * SR)) / SR
+
+
+def lp(x, cut):
+    """一阶低通。"""
+    import math
+    from scipy.signal import lfilter
+    a = math.exp(-2 * math.pi * cut / SR)
+    return lfilter([1 - a], [1, -a], x)
+
+
+def env(d, att=0.01, rel=0.1):
+    """线性起音 / 释音包络。"""
+    t = tt(d)
+    return np.minimum(t / att, 1) * np.minimum((d - t) / rel, 1).clip(0)
+
+
+def noise(rng, d, cut, amp=1.0):
+    """低通滤波后的白噪声，峰值归一到 amp。rng 由调用方传入，保证出片一致。"""
+    y = lp(rng.standard_normal(int(d * SR)), cut)
+    return amp * y / (np.abs(y).max() + 1e-9)
+
+
+def bed(rng, d, cut, amp, mod=0.0, rate=0.2, att=1.0):
+    """环境底噪（风、人声、水）：慢起慢收，可加缓慢的音量起伏。"""
+    return noise(rng, d, cut, amp) * env(d, att, 1.0) * (1 + mod * np.sin(2 * np.pi * rate * tt(d)))
+
+
+def pluck(rng, f, amp, d=1.2):
+    """Karplus-Strong 拨弦。"""
+    n, p = int(d * SR), int(SR / f)
+    buf, out = rng.uniform(-1, 1, p), np.zeros(n)
+    for i in range(n):
+        out[i] = buf[i % p]
+        buf[i % p] = 0.996 * 0.5 * (buf[i % p] + buf[(i + 1) % p])
+    return amp * lp(out, 2400)
+
+
+def glide(f0, f1, d, amp):
+    """线性滑音，两端 sin² 渐入渐出。"""
+    t = tt(d)
+    return amp * np.sin(2 * np.pi * np.cumsum(np.linspace(f0, f1, len(t))) / SR) * np.sin(np.pi * t / d) ** 2
+
+
 def sweep(f0, f1, dur, amp):
     tt = np.arange(int(dur * SR)) / SR
     ph = 2 * np.pi * np.cumsum(f0 * (f1 / f0) ** (tt / dur)) / SR
