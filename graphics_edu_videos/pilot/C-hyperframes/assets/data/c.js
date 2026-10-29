@@ -1,0 +1,1 @@
+window.C = {"duration": 10.0, "fps": 60, "calib": {"hf": [120, 880], "gl": [720, 880], "manim": [1320, 880]}, "block": 80, "bit": 24, "bitStep": 32, "bitX": 100, "bitY": 28, "pFadeAt": 2.0, "pFadeDur": 0.5, "pPos": [1600, 400]};

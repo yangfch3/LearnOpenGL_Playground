@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="assets/shared/vendor/gsap/gsap.min.js"></script>
+    <script src="assets/data/n1.js"></script>
+    <script src="assets/text/zh-CN.js"></script>
+    <script type="importmap">
+      { "imports": { "three": "./assets/shared/vendor/three/three.module.js" } }
+    </script>
+    <style>
+      @font-face {
+        font-family: "Noto Sans SC";
+        src: url("assets/shared/fonts/NotoSansSC-VF.ttf") format("truetype");
+        font-weight: 100 900;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #11161d; }
+      #root { width: 100%; height: 100%; font-family: "Noto Sans SC", sans-serif; color: #edf1f7; }
+      #stage, #sceneA, #sceneB { position: absolute; inset: 0; }
+      svg.full { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+      #roomWrap { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+      .think { position: absolute; left: 140px; width: 620px; text-align: center; font-size: 40px; font-weight: 500; line-height: 56px; opacity: 0; }
+      .ask { position: absolute; left: 96px; width: 860px; font-size: 44px; line-height: 1.4; opacity: 0; }
+      .step { position: absolute; left: 1012px; top: 96px; font-size: 36px; font-weight: 500; opacity: 0; white-space: nowrap; }
+      #gl { position: absolute; left: 1000px; top: 160px; width: 824px; height: 780px; opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="40.6" data-width="1920" data-height="1080">
+      <div id="stage" class="clip" data-start="0" data-duration="40.6" data-track-index="0" data-layout-allow-overlap>
+        <div id="sceneA">
+          <div id="roomWrap">
+            <svg class="full" viewBox="0 0 1920 1080">
+              <line x1="0" y1="900" x2="1920" y2="900" stroke="#2e3947" stroke-width="3" />
+              <rect x="680" y="700" width="20" height="200" fill="#262f3b" />
+              <rect x="1500" y="700" width="20" height="200" fill="#262f3b" />
+              <polygon points="680,632 1520,632 1540,680 660,680" fill="#2e3947" />
+              <rect x="660" y="680" width="880" height="20" fill="#262f3b" />
+              <rect x="1085" y="612" width="30" height="24" fill="#5a6577" />
+              <ellipse cx="1100" cy="640" rx="60" ry="8" fill="#5a6577" />
+              <rect x="900" y="380" width="400" height="232" rx="10" fill="#1b222c" stroke="#9aa6b8" stroke-width="3" />
+              <rect x="908" y="388" width="384" height="216" fill="#1e2a38" />
+              <g id="icon">
+                <rect id="iconTile" x="930" y="400" width="28" height="28" rx="4" fill="#2e3947" />
+                <polygon points="937,422 951,422 944,408" fill="#ff8033" />
+                <text id="exeLabel" data-layout-ignore x="944" y="440" font-size="9" text-anchor="middle" fill="#edf1f7" font-family="Noto Sans SC"></text>
+              </g>
+              <g id="gwin" opacity="0">
+                <rect x="990" y="426" width="260" height="154" fill="#334d4d" stroke="#9aa6b8" stroke-width="0.6" />
+                <rect x="990" y="410" width="260" height="16" fill="#1b222c" stroke="#9aa6b8" stroke-width="0.6" />
+                <text id="gameTitle" data-layout-ignore x="997" y="421.5" font-size="9" fill="#edf1f7" font-family="Noto Sans SC"></text>
+                <circle cx="1243" cy="418" r="2.6" fill="#9aa6b8" />
+                <circle cx="1235" cy="418" r="2.6" fill="#9aa6b8" />
+                <clipPath id="gclip"><rect x="990.5" y="426.5" width="259" height="153" /></clipPath>
+                <g clip-path="url(#gclip)">
+                  <polygon id="gTri" points="-17,12 17,12 0,-18" fill="#ff8033" />
+                  <polygon id="gTriHL" points="-17,12 17,12 0,-18" fill="none" stroke="#edf1f7" stroke-width="1.6" stroke-linejoin="round" opacity="0" />
+                  <circle id="gCirc" r="13" fill="#e8dcc2" />
+                  <rect id="gSq" x="-13" y="-13" width="26" height="26" fill="#6c8ebf" />
+                  <g id="gHouse"><rect x="-12" y="-6" width="24" height="18" fill="#8fbf7f" /><polygon points="-15,-6 15,-6 0,-20" fill="#8fbf7f" /></g>
+                  <path id="gRing" d="M-14,0a14,14 0 1,0 28,0a14,14 0 1,0 -28,0M-6,0a6,6 0 1,1 12,0a6,6 0 1,1 -12,0" fill="#d98ba6" fill-rule="evenodd" />
+                </g>
+              </g>
+              <path id="cursor" d="M0,0 L0,13 L3.5,10 L6,15.5 L8,14.6 L5.6,9.4 L10,9.4 Z" fill="#edf1f7" stroke="#11161d" stroke-width="0.8" />
+              <rect x="790" y="648" width="160" height="12" rx="3" fill="#5a6577" />
+              <ellipse id="mouse" cx="1062" cy="660" rx="11" ry="7" fill="#9aa6b8" />
+              <g id="cup">
+                <path d="M-11,-26 L11,-26 L9,0 L-9,0 Z" fill="#edf1f7" />
+                <path d="M10,-21 q9,2 7,9 q-2,5 -8,4" fill="none" stroke="#edf1f7" stroke-width="3" />
+                <path id="steam" d="M-4,-32 q-5,-8 0,-14 q5,-6 0,-13 M5,-32 q-5,-8 0,-14" fill="none" stroke="#9aa6b8" stroke-width="2.5" stroke-linecap="round" />
+              </g>
+              <g id="pb" opacity="0" stroke-linecap="round">
+                <line id="pbArmL" stroke="#9aa6b8" stroke-width="24" />
+                <line id="pbForeL" stroke="#9aa6b8" stroke-width="22" />
+                <line id="pbArmR" stroke="#9aa6b8" stroke-width="24" />
+                <line id="pbForeR" stroke="#9aa6b8" stroke-width="22" />
+                <rect id="pbTorso" width="140" height="210" rx="40" fill="#9aa6b8" />
+                <circle id="pbHead" r="42" fill="#d7dde6" />
+                <path id="pbHair" fill="#2e3947" />
+              </g>
+              <g id="chair">
+                <rect x="790" y="690" width="140" height="170" rx="14" fill="#262f3b" stroke="#5a6577" stroke-width="3" />
+                <rect x="850" y="860" width="20" height="26" fill="#5a6577" />
+                <line x1="800" y1="888" x2="920" y2="888" stroke="#5a6577" stroke-width="6" stroke-linecap="round" />
+              </g>
+              <g id="pp" stroke-linecap="round" stroke-linejoin="round">
+                <polyline id="ppLegB" fill="none" stroke="#5a6577" stroke-width="26" />
+                <polyline id="ppArmB" fill="none" stroke="#7d8899" stroke-width="22" />
+                <line id="ppTorso" stroke="#9aa6b8" stroke-width="64" />
+                <polyline id="ppLegA" fill="none" stroke="#6b7689" stroke-width="28" />
+                <circle id="ppHead" r="36" fill="#d7dde6" />
+                <polyline id="ppArmA" fill="none" stroke="#9aa6b8" stroke-width="22" />
+              </g>
+            </svg>
+          </div>
+          <svg id="overlayA" class="full" viewBox="0 0 1920 1080">
+            <g id="bubble" opacity="0">
+              <circle id="tr1" cx="676" cy="470" r="9" fill="#1b222c" stroke="#edf1f7" stroke-width="3" />
+              <circle id="tr2" cx="640" cy="432" r="15" fill="#1b222c" stroke="#edf1f7" stroke-width="3" />
+              <rect id="cloud" x="140" y="150" width="620" height="240" rx="110" fill="#1b222c" stroke="#edf1f7" stroke-width="3" />
+            </g>
+            <polygon id="flyTri" fill="#ff8033" opacity="0" />
+          </svg>
+          <div id="think1" class="think" style="top: 206px"></div>
+          <div id="think2" class="think" style="top: 278px"></div>
+        </div>
+        <div id="sceneB">
+          <div id="ask1" class="ask" style="top: 440px"></div>
+          <div id="ask2" class="ask" style="top: 502px"></div>
+          <div id="steps"></div>
+          <canvas id="gl" width="824" height="780"></canvas>
+          <svg id="flat" class="full" viewBox="0 0 1920 1080"></svg>
+        </div>
+      </div>
+      <audio id="sfx" class="clip" data-start="0" data-duration="40.6" data-track-index="1" data-volume="1" src="assets/sfx/n1.wav"></audio>
+    </div>
+    <script>
+      const D = window.N1, T = window.TEXT, B = D.beats, W = D.walk;
+      const $ = (id) => document.getElementById(id);
+      const set = (el, a) => { for (const k in a) el.setAttribute(k, a[k]); return el; };
+      const clamp = (x, a = 0, b = 1) => Math.min(Math.max(x, a), b);
+      const E = { out1: (k) => 1 - (1 - k) ** 2, out2: (k) => 1 - (1 - k) ** 3, in2: (k) => k ** 3, io2: (k) => (k < 0.5 ? 4 * k ** 3 : 1 - (-2 * k + 2) ** 3 / 2) };
+      const seg = (t, t0, t1, e = E.io2) => e(clamp((t - t0) / (t1 - t0)));
+      const lerp = (a, b, k) => a + (b - a) * k;
+      const lerp2 = (p, q, k) => [lerp(p[0], q[0], k), lerp(p[1], q[1], k)];
+      const R = Math.PI / 180;
+      const down = (p, len, a) => [p[0] + len * Math.sin(a * R), p[1] + len * Math.cos(a * R)];
+      const up = (p, len, a) => [p[0] + len * Math.sin(a * R), p[1] - len * Math.cos(a * R)];
+      const pts = (...ps) => ps.map((p) => p.map((v) => v.toFixed(1)).join(",")).join(" ");
+      const ik = (S, Tg, l1, l2, bend) => {  // 两段骨骼 IK：返回 [肘, 手]
+        const dx = Tg[0] - S[0], dy = Tg[1] - S[1], d0 = Math.hypot(dx, dy), d = Math.min(d0, l1 + l2 - 0.5);
+        const a = Math.atan2(dy, dx), c = Math.acos(clamp((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d), -1, 1));
+        return [[S[0] + l1 * Math.cos(a + bend * c), S[1] + l1 * Math.sin(a + bend * c)], [S[0] + (dx / d0) * d, S[1] + (dy / d0) * d]];
+      };
+
+      // 镜头：(缩放, 房间中对准画面中心的点)；中心按缩放进度插值，推拉时有稳定的锚点
+      const CAM = { W: [1, 960, 540], Z: [4.25, 1100, 496], M: [1.7, 1010, 560] };
+      const camMove = (a, b, k) => {
+        const s = Math.exp(lerp(Math.log(a[0]), Math.log(b[0]), k));
+        const kc = (1 / a[0] - 1 / s) / (1 / a[0] - 1 / b[0]);
+        return [s, lerp(a[1], b[1], kc), lerp(a[2], b[2], kc)];
+      };
+      const camAt = (t) => (t < B.pull ? camMove(CAM.W, CAM.Z, seg(t, B.push, B.pushEnd)) : camMove(CAM.Z, CAM.M, seg(t, B.pull, B.pullEnd)));
+      const toScreen = (c, p) => [960 + c[0] * (p[0] - c[1]), 540 + c[0] * (p[1] - c[2])];
+
+      // 侧面人物（面朝右）：步行相位由已走距离决定，脚步声时刻由 build.py 按同一公式解出
+      const CUP_SPOT = [760, 652], CUP_OFF = [12, 22];
+      function sideRig(t) {
+        const k = clamp((t - W.t0) / (W.t1 - W.t0));
+        let x = W.x0 + (W.x1 - W.x0) * E.out1(k);
+        const amp = t < W.t0 ? 0 : clamp(2.2 * (1 - k));
+        const ph = (Math.PI * (x - W.x0)) / W.stride;
+        x += (780 - W.x1) * seg(t, B.turn, B.turn + 0.3);
+        const reach = seg(t, B.cupReach, B.cupDown) * (1 - seg(t, B.armBack, B.armBack + 0.3));
+        const H = [x, 670 - 7 * amp * Math.abs(Math.sin(ph))], lean = 4 * amp + 10 * reach;
+        const S = up(H, 150, lean), head = up(S, 54, lean);
+        const leg = (th, bend) => { const kn = down(H, 112, th); const an = down(kn, 112, th - bend); return [H, kn, an, [an[0] + 24, an[1]]]; };
+        const thA = 24 * amp * Math.cos(ph);
+        const carry = [S[0] + 62, S[1] + 70], hang = [S[0] + 8, S[1] + 175], spot = [CUP_SPOT[0] - CUP_OFF[0], CUP_SPOT[1] - CUP_OFF[1]];
+        let target = t < B.cupReach ? carry : t < B.armBack ? lerp2(carry, spot, seg(t, B.cupReach, B.cupDown)) : lerp2(spot, hang, seg(t, B.armBack, B.armBack + 0.3));
+        const [elA, hA] = ik(S, target, 95, 90, 1);
+        const elB = down(S, 95, -22 * amp * Math.cos(ph)), hB = down(elB, 90, -22 * amp * Math.cos(ph) + 18);
+        set($("ppLegA"), { points: pts(...leg(thA, 34 * amp * Math.max(0, -Math.sin(ph)))) });
+        set($("ppLegB"), { points: pts(...leg(-thA, 34 * amp * Math.max(0, Math.sin(ph)))) });
+        set($("ppTorso"), { x1: H[0], y1: H[1] - 10, x2: S[0], y2: S[1] });
+        set($("ppHead"), { cx: head[0], cy: head[1] });
+        set($("ppArmA"), { points: pts(S, elA, hA) });
+        set($("ppArmB"), { points: pts(S, elB, hB) });
+        const cup = t < B.cupDown ? [hA[0] + CUP_OFF[0], hA[1] + CUP_OFF[1]] : CUP_SPOT;
+        set($("cup"), { transform: `translate(${cup[0].toFixed(1)},${cup[1].toFixed(1)})` });
+        set($("pp"), { opacity: (1 - seg(t, B.turn, B.turn + 0.25, (q) => q)).toFixed(3) });
+      }
+
+      // 背面人物：坐下、右手握鼠标；想法冒出前头部轻抬
+      function backRig(t, mouse) {
+        const bx = lerp(780, 860, seg(t, B.turn, B.sit));
+        let hy = lerp(468, 580, seg(t, B.sit, B.sitLand, E.in2));
+        hy += 7 * Math.sin(Math.PI * clamp((t - B.sitLand) / 0.3)) - 6 * Math.sin(Math.PI * clamp((t - B.bubble + 0.2) / 0.6));
+        const sy = hy + 60;
+        set($("pbHead"), { cx: bx, cy: hy });
+        set($("pbHair"), { d: `M${bx - 42},${hy - 4} A42,42 0 0,1 ${bx + 42},${hy - 4} Q${bx},${hy + 6} ${bx - 42},${hy - 4} Z` });
+        set($("pbTorso"), { x: bx - 70, y: sy - 12 });
+        const sL = [bx - 62, sy + 8], sR = [bx + 62, sy + 8];
+        const rest = seg(t, B.sitLand, B.sitLand + 0.4), grab = seg(t, B.mouse, B.mouse + 0.6);
+        const tL = lerp2([bx - 72, sy + 150], [820, 664], rest), tR = lerp2(lerp2([bx + 72, sy + 150], [930, 668], rest), mouse, grab);
+        const [eL, hL] = ik(sL, tL, 80, 78, 1), [eR, hR] = ik(sR, tR, 80, 78, 1);
+        set($("pbArmL"), { x1: sL[0], y1: sL[1], x2: eL[0], y2: eL[1] });
+        set($("pbForeL"), { x1: eL[0], y1: eL[1], x2: hL[0], y2: hL[1] });
+        set($("pbArmR"), { x1: sR[0], y1: sR[1], x2: eR[0], y2: eR[1] });
+        set($("pbForeR"), { x1: eR[0], y1: eR[1], x2: hR[0], y2: hR[1] });
+        set($("pb"), { opacity: seg(t, B.turn, B.turn + 0.25, (q) => q).toFixed(3) });
+      }
+
+      // 游戏窗口里的图形：缓慢移动与旋转，均为时间的函数
+      const SH = {
+        gTri: (u) => [1060 + 10 * Math.sin(0.5 * u), 482 + 6 * Math.cos(0.4 * u), 12 * u],
+        gCirc: (u) => [1165 + 14 * Math.sin(0.35 * u + 1), 468 + 8 * Math.sin(0.5 * u), 0],
+        gSq: (u) => [1205 + 6 * Math.cos(0.3 * u), 540 + 6 * Math.sin(0.45 * u), -15 * u],
+        gHouse: (u) => [1028 + 8 * Math.cos(0.4 * u), 548 + 5 * Math.sin(0.6 * u), 8 * Math.sin(0.5 * u)],
+        gRing: (u) => [1130 + 10 * Math.sin(0.3 * u + 2), 548 + 6 * Math.cos(0.5 * u), 10 * u],
+      };
+      const CUR0 = [1150, 520], CUR1 = [946, 416], MOUSE0 = [1062, 660];
+
+      function renderA(t) {
+        const c = camAt(t);
+        $("roomWrap").style.transform = `translate(${(960 - c[0] * c[1]).toFixed(2)}px, ${(540 - c[0] * c[2]).toFixed(2)}px) scale(${c[0].toFixed(4)})`;
+        sideRig(t);
+        const kc = seg(t, B.cursor, B.cursorEnd), cur = lerp2(CUR0, CUR1, kc);
+        const mouse = [MOUSE0[0] + (cur[0] - CUR0[0]) * 0.05, MOUSE0[1] + (cur[1] - CUR0[1]) * 0.05];
+        set($("cursor"), { transform: `translate(${cur[0].toFixed(2)},${cur[1].toFixed(2)})` });
+        set($("mouse"), { cx: mouse[0], cy: mouse[1] });
+        backRig(t, mouse);
+        const u = t - B.popup;
+        for (const id in SH) {
+          const [x, y, r] = SH[id](u);
+          set($(id), { transform: `translate(${x.toFixed(2)},${y.toFixed(2)}) rotate(${r.toFixed(2)})` });
+          if (id === "gTri") set($("gTriHL"), { transform: $(id).getAttribute("transform") });
+        }
+        set($("steam"), { transform: `translate(0,${(-3 * Math.sin(2.2 * t)).toFixed(2)})`, opacity: (0.6 + 0.3 * Math.sin(1.7 * t)).toFixed(3) });
+        // 转场：游戏里的三角形飞向右侧画面中心
+        const k = seg(t, B.trans, B.B + 0.2);
+        const [x, y, r] = SH.gTri(u), s0 = c[0], p0 = toScreen(c, [x, y]), p1 = [D.panel.x + D.panel.w / 2, D.panel.y + D.panel.h / 2];
+        const p = lerp2(p0, p1, k), s = lerp(s0, 6, k), rr = (r * (1 - k)) * R;
+        const tri = [[-17, 12], [17, 12], [0, -18]].map(([a, b2]) => [p[0] + s * (a * Math.cos(rr) - b2 * Math.sin(rr)), p[1] + s * (a * Math.sin(rr) + b2 * Math.cos(rr))]);
+        set($("flyTri"), { points: pts(...tri) });
+      }
+
+      // ---- B 右侧平面阶段：屏幕平面、投影点、连边、光栅化、上色、显示器 ----
+      const NS = "http://www.w3.org/2000/svg", I = D.img, C = I.w / I.nx;
+      const flat = $("flat");
+      const mk = (tag, a, parent = flat) => parent.appendChild(set(document.createElementNS(NS, tag), a));
+      const gx = (x) => I.x + x * C, gy = (y) => I.y + (I.ny - y) * C;
+      const bezel = mk("g", { opacity: 0 });
+      mk("rect", { x: I.x - 18, y: I.y - 18, width: I.w + 36, height: I.h + 36, rx: 16, fill: "#1b222c", stroke: "#9aa6b8", "stroke-width": 3 }, bezel);
+      mk("rect", { x: I.x + I.w / 2 - 20, y: I.y + I.h + 18, width: 40, height: 40, fill: "#5a6577" }, bezel);
+      mk("rect", { x: I.x + I.w / 2 - 110, y: I.y + I.h + 58, width: 220, height: 12, rx: 6, fill: "#5a6577" }, bezel);
+      const screenFill = mk("rect", { x: I.x, y: I.y, width: I.w, height: I.h, fill: "#334d4d", opacity: 0 });
+      const grid = mk("g", { opacity: 0, stroke: "#2e3947", "stroke-width": 2 });
+      for (let i = 1; i < I.nx; i++) mk("line", { x1: gx(i), y1: I.y, x2: gx(i), y2: I.y + I.h }, grid);
+      for (let j = 1; j < I.ny; j++) mk("line", { x1: I.x, y1: gy(j), x2: I.x + I.w, y2: gy(j) }, grid);
+      const cells = [];
+      D.rows.forEach((row) => row.cols.forEach((i) => {
+        const r = mk("rect", { x: gx(i) + 4, y: gy(row.j + 1) + 4, width: C - 8, height: C - 8, rx: 4, fill: "#edf1f7", "fill-opacity": 0.22, stroke: "#9aa6b8", "stroke-width": 2, opacity: 0 });
+        cells.push({ r, i, j: row.j, at: row.at });
+      }));
+      const frame = mk("rect", { x: I.x, y: I.y, width: I.w, height: I.h, fill: "none", stroke: "#45c4e0", "stroke-width": 3, opacity: 0 });
+      const P = D.verts.map(([x, y]) => [gx(x), gy(y)]);
+      const edges = P.map((p, k) => {
+        const q = P[(k + 1) % 3], len = Math.hypot(q[0] - p[0], q[1] - p[1]);
+        return mk("line", { x1: p[0], y1: p[1], x2: q[0], y2: q[1], stroke: "#edf1f7", "stroke-width": 3, "stroke-dasharray": len, "stroke-dashoffset": len, opacity: 0, "data-len": len });
+      });
+      const dots = mk("g", { opacity: 0 });
+      P.forEach((p) => mk("circle", { cx: p[0], cy: p[1], r: 8, fill: "#edf1f7" }, dots));
+
+      // 文字
+      $("exeLabel").textContent = T["n1.exe"];
+      $("gameTitle").textContent = T["n1.game"];
+      ["think1", "think2", "ask1", "ask2"].forEach((k) => ($(k).textContent = T[`n1.${k}`]));
+      const stepEls = D.steps.map((s) => Object.assign($("steps").appendChild(document.createElement("div")), { className: "step", textContent: T[`n1.${s.key}`] }));
+
+      const tl = gsap.timeline({ paused: true });
+      const clock = { t: 0 };
+      tl.fromTo(clock, { t: 0 }, { t: D.duration, duration: D.duration, ease: "none", onUpdate: () => renderA(clock.t) }, 0);
+      const fadeIn = (el, at, dy = 16) => tl.fromTo(el, { opacity: 0, y: dy }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, at);
+      const fadeOut = (el, at) => tl.to(el, { opacity: 0, duration: 0.3, ease: "power2.in" }, at);
+
+      // A：双击、弹窗、想法
+      tl.to("#iconTile", { attr: { fill: "#4a5b70" }, duration: 0.08 }, B.click1);
+      tl.to("#iconTile", { attr: { fill: "#2e3947" }, duration: 0.3 }, B.popup);
+      tl.fromTo("#gwin", { opacity: 0, scale: 0.85, svgOrigin: "1120 495" }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.6)" }, B.popup);
+      tl.set("#bubble", { opacity: 1 }, B.bubble);
+      ["#tr1", "#tr2", "#cloud"].forEach((s, k) => tl.fromTo(s, { scale: 0, transformOrigin: "50% 100%" }, { scale: 1, duration: k === 2 ? 0.45 : 0.25, ease: "back.out(2)" }, B.bubble + 0.08 * k));
+      fadeIn("#think1", B.think1, 10);
+      fadeIn("#think2", B.think2, 10);
+      tl.fromTo("#gTriHL", { opacity: 0 }, { opacity: 1, duration: 0.25 }, B.think1);
+      tl.to("#gTriHL", { opacity: 0.3, duration: 0.3 }, B.think1 + 0.35);
+      tl.to("#gTriHL", { opacity: 1, duration: 0.25 }, B.think1 + 0.7);
+      fadeOut(["#bubble", "#think1", "#think2", "#gTriHL"], B.bubbleOut);
+      // 转场：房间退场，三角形飞往右侧并消隐，三维场景接上
+      tl.set("#gTri", { opacity: 0 }, B.trans);
+      tl.set("#flyTri", { opacity: 1 }, B.trans);
+      tl.to("#roomWrap", { opacity: 0, duration: 0.45, ease: "power2.in" }, B.trans);
+      tl.to("#flyTri", { opacity: 0, duration: 0.4, ease: "power2.in" }, B.B + 0.1);
+      tl.to("#gl", { opacity: 1, duration: 0.4, ease: "power2.out" }, B.B);
+
+      // B：左文、步名
+      fadeIn("#ask1", B.ask);
+      fadeIn("#ask2", B.ask + 0.25);
+      D.steps.forEach((s, k) => {
+        fadeIn(stepEls[k], s.at, 10);
+        if (k < D.steps.length - 1) fadeOut(stepEls[k], D.steps[k + 1].at - 0.3);
+      });
+      // 三维 → 平面交接：飞入相机后两层画面重合，交叉淡化
+      tl.to("#gl", { opacity: 0, duration: 0.3 }, B.flyEnd);
+      tl.to([frame, dots], { opacity: 1, duration: 0.3 }, B.flyEnd);
+      edges.forEach((e, k) => tl.fromTo(e, { opacity: 1, attr: { "stroke-dashoffset": e.dataset.len } }, { attr: { "stroke-dashoffset": 0 }, duration: 0.3, ease: "power2.out", immediateRender: false }, B.edges + 0.25 * k));
+      tl.to(grid, { opacity: 1, duration: 0.4 }, B.grid);
+      cells.forEach((c) => tl.fromTo(c.r, { opacity: 0, scale: 0.6, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.2, ease: "back.out(2)" }, c.at));
+      const order = [...cells].sort((a, b2) => a.i + a.j - (b2.i + b2.j));
+      order.forEach((c, k) => tl.to(c.r, { attr: { fill: "#ff8033", "fill-opacity": 1, stroke: "#ff8033" }, duration: 0.25, ease: "power2.out" }, B.color + (0.8 * k) / order.length));
+      tl.to([grid, frame, dots, ...edges], { opacity: 0, duration: 0.4 }, B.monitor);
+      tl.to(screenFill, { opacity: 1, duration: 0.5 }, B.monitor);
+      tl.fromTo(bezel, { opacity: 0, scale: 0.96, transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, B.monitor);
+
+      tl.set({}, {}, D.duration);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+      renderA(0);
+    </script>
+    <script type="module" src="n1.js"></script>
+  </body>
+</html>

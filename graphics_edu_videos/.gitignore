@@ -15,8 +15,15 @@ media/
 out/
 .debug/
 .hyperframes/
+# 原生 OpenGL 编译产物
+pilot/P3-opengl/build/
 *.mp4
 *.mov
 *.webm
 *.mkv
 *.gif
+# HyperFrames 转码缓存
+.transcode-cache/
+# 由脚本生成的音轨（build.py / music.py 可重建）
+pilot/*/assets/sfx/*.wav
+pilot/*/assets/bgm/*.wav

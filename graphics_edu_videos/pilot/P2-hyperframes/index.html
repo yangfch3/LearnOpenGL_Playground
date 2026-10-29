@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <link rel="stylesheet" href="assets/shared/vendor/katex/katex.min.css" />
+    <script src="assets/shared/vendor/katex/katex.min.js"></script>
+    <script src="assets/shared/vendor/gsap/gsap.min.js"></script>
+    <script src="assets/data/p2.js"></script>
+    <script src="assets/text/zh-CN.js"></script>
+    <style>
+      @font-face {
+        font-family: "Noto Sans SC";
+        src: url("assets/shared/fonts/NotoSansSC-VF.ttf") format("truetype");
+        font-weight: 100 900;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #11161d; }
+      #root { width: 100%; height: 100%; font-family: "Noto Sans SC", sans-serif; color: #edf1f7; }
+      #stage { position: absolute; inset: 0; }
+      #eq { position: absolute; left: 0; top: 150px; width: 1920px; text-align: center; font-size: 56px; opacity: 0; }
+      .exp { position: absolute; left: 0; width: 1920px; text-align: center; font-size: 48px; }
+      #eq .katex-display, .exp .katex-display { margin: 0; }
+      #eq span[id], .exp span[id] { display: inline-block; }
+      #q { position: absolute; font-size: 56px; opacity: 0; }
+      .lab { position: absolute; font-size: 36px; font-weight: 500; color: #9aa6b8; white-space: nowrap; opacity: 0; }
+      .cap { position: absolute; left: 0; width: 1920px; top: 836px; text-align: center; font-size: 44px; line-height: 1.4; opacity: 0; }
+      .lab .katex, .cap .katex { font-size: 1.1em; }
+      .hl { position: absolute; border-radius: 12px; background: rgba(237, 241, 247, 0.12); border: 3px solid #edf1f7; opacity: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="20" data-width="1920" data-height="1080">
+      <div id="stage" class="clip" data-start="0" data-duration="20" data-track-index="0" data-layout-allow-overlap>
+        <div id="hls"></div>
+        <div id="eq"></div>
+        <div id="q"></div>
+        <div id="exp0" class="exp" style="top: 590px"></div>
+        <div id="exp1" class="exp" style="top: 690px"></div>
+        <div id="labT" class="lab"></div>
+        <div id="labP" class="lab"></div>
+        <div id="cap1" class="cap" data-hold></div>
+        <div id="cap2" class="cap" data-hold></div>
+      </div>
+      <audio id="sfx" class="clip" data-start="0" data-duration="20" data-track-index="1" data-volume="1" src="assets/sfx/p2.wav"></audio>
+    </div>
+    <script>
+(() => {
+  const D = window.P2, T = window.TEXT, B = D.beats;
+  const K = (s, display) => katex.renderToString(s, { trust: true, strict: false, displayMode: display, output: "html" });
+  const id = (name, body) => `\\htmlId{${name}}{${body}}`;
+  const mixed = (el, s) => {
+    el.innerHTML = s.split("$").map((p, i) => (i % 2 ? K(p, false) : p.replace(/[&<>]/g, (c) => `&#${c.charCodeAt(0)};`))).join("");
+  };
+  const $ = (q) => document.getElementById(q);
+
+  const mat = D.M.map((row, r) => row.map((v, k) => id(`m-${r}-${k}`, v)).join(" & ")).join(" \\\\ ");
+  const vec = D.V.map((v, k) => id(`v-${k}`, v)).join(" \\\\ ");
+  const res = D.R.map((v, r) => id(`res-${r}`, v)).join(" \\\\ ");
+  $("eq").innerHTML = K(`${id("matT", `\\begin{bmatrix} ${mat} \\end{bmatrix}`)} \\cdot ${id("vecP", `\\begin{bmatrix} ${vec} \\end{bmatrix}`)}
+    = ${id("resB", `\\begin{bmatrix} ${res} \\end{bmatrix}`)}`, true);
+  $("q").innerHTML = K("?", false);
+  [0, 1].forEach((r) => {
+    const terms = D.V.map((v, k) => id(`t-${r}-${k}`, `${id(`e-${r}-${k}-a`, D.M[r][k])} \\cdot ${id(`e-${r}-${k}-b`, v)}`));
+    $(`exp${r}`).innerHTML = K(terms.map((t, k) => (k ? `${id(`p-${r}-${k}`, "+")} ${t}` : t)).join(" ")
+      + ` ${id(`eq-${r}`, "=")} ${id(`e-${r}-s`, D.R[r])}`, true);
+  });
+  mixed($("labT"), T["p2.labT"]);
+  mixed($("labP"), T["p2.labP"]);
+  mixed($("cap1"), T["p2.cap1"]);
+  mixed($("cap2"), T["p2.cap2"]);
+
+  const box = (e) => {
+    const r = e.getBoundingClientRect();
+    return { x: r.left, y: r.top, w: r.width, h: r.height, cx: r.left + r.width / 2, cy: r.top + r.height / 2 };
+  };
+  const union = (els) => {
+    const bs = els.map(box), x = Math.min(...bs.map((b) => b.x)), y = Math.min(...bs.map((b) => b.y));
+    const x2 = Math.max(...bs.map((b) => b.x + b.w)), y2 = Math.max(...bs.map((b) => b.y + b.h));
+    return { x, y, w: x2 - x, h: y2 - y };
+  };
+  const PX = 5, PY = 2;
+  const place = (hl, b) => ({ x: b.x - PX, y: b.y - PY, width: b.w + 2 * PX, height: b.h + 2 * PY });
+
+  document.fonts.ready.then(() => {
+    const tl = gsap.timeline({ paused: true });
+    const m = (r, k) => $(`m-${r}-${k}`), v = (k) => $(`v-${k}`);
+    const all = [...D.M.flatMap((row, r) => row.map((_, k) => m(r, k)))];
+    const hls = $("hls");
+    const mkHl = () => Object.assign(hls.appendChild(document.createElement("div")), { className: "hl" });
+    const parts = (r) => [...$(`exp${r}`).querySelectorAll("span[id]")].filter((e) => /^(t|p|eq)-/.test(e.id) || e.id.endsWith("-s"));
+
+    // 标签与「?」位置
+    const bT = box($("matT")), bP = box($("vecP")), bR = box($("resB"));
+    const lT = $("labT"), lP = $("labP"), q = $("q");
+    lT.style.left = `${bT.cx - box(lT).w / 2}px`; lT.style.top = `${bT.y + bT.h + 18}px`;
+    lP.style.left = `${bP.cx - box(lP).w / 2}px`; lP.style.top = `${bP.y + bP.h + 18}px`;
+    q.style.left = `${bR.cx - box(q).w / 2}px`; q.style.top = `${bR.cy - box(q).h / 2}px`;
+
+    // 0–5：公式、问号、字幕
+    D.R.forEach((_, r) => gsap.set($(`res-${r}`), { opacity: 0 }));
+    tl.fromTo($("resB"), { opacity: 0 }, { opacity: 0, duration: 0.01 }, 0);
+    tl.fromTo(["#eq", lT, lP, q], { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 0);
+    tl.fromTo("#cap1", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, B.cap1);
+    tl.to("#cap1", { opacity: 0, duration: 0.3, ease: "power2.in" }, B.cap1Out);
+    tl.to(q, { opacity: 0, duration: 0.3, ease: "power2.in" }, D.rows[0].start);
+    tl.to($("resB"), { opacity: 1, duration: 0.5, ease: "power3.out" }, D.rows[0].start);
+    [0, 1].forEach((r) => gsap.set($(`exp${r}`).querySelectorAll("span[id]"), { opacity: 0 }));
+
+    const hA = mkHl(), hB = mkHl();
+    const focusRow = (r, at) => all.forEach((e) => tl.to(e, { opacity: e.id.startsWith(`m-${r}-`) ? 1 : 0.4, duration: 0.3, ease: "power2.out" }, at));
+    const moveHl = (hl, b, at, first) => {
+      const p = place(hl, b);
+      if (first) tl.fromTo(hl, { ...p, opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, at);
+      else tl.to(hl, { ...p, opacity: 1, duration: 0.25, ease: "power2.out" }, at);
+    };
+    const fly = (el, from, at, dur, s0) => {
+      const a = box(from), b = box(el);
+      tl.fromTo(el, { x: a.cx - b.cx, y: a.cy - b.cy, scale: s0, opacity: 1 },
+        { x: 0, y: 0, scale: 1, duration: dur, ease: "power2.inOut", immediateRender: false }, at);
+    };
+
+    // 第 1、2 行：逐项高亮、项飞入展开式，和飞回结果
+    D.rows.forEach((row) => {
+      const r = row.r;
+      focusRow(r, row.start);
+      if (r > 0) tl.to(parts(0), { opacity: 0.4, duration: 0.3 }, row.start);
+      row.terms.forEach((t, k) => {
+        moveHl(hA, box(m(r, k)), t, k === 0 && r === 0);
+        moveHl(hB, box(v(k)), t, k === 0 && r === 0);
+        const at = t + 0.15;
+        fly($(`e-${r}-${k}-a`), m(r, k), at, D.fly, 56 / 48);
+        fly($(`e-${r}-${k}-b`), v(k), at, D.fly, 56 / 48);
+        const dot = $(`t-${r}-${k}`);
+        tl.fromTo(dot, { opacity: 0 }, { opacity: 1, duration: 0.2 }, at);
+        if (k) tl.fromTo($(`p-${r}-${k}`), { opacity: 0 }, { opacity: 1, duration: 0.3 }, at + 0.2);
+      });
+      tl.to([hA, hB], { opacity: 0, duration: 0.3, ease: "power2.in" }, row.sumAt);
+      tl.fromTo([$(`eq-${r}`), $(`e-${r}-s`)], { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(3)" }, row.sumAt);
+      tl.set($(`res-${r}`), { opacity: 1 }, row.sumFly);
+      fly($(`res-${r}`), $(`e-${r}-s`), row.sumFly, D.sumFlyDur, 48 / 56);
+    });
+
+    // 第 3、4 行：整行高亮，直接出结果
+    D.direct.forEach((d, n) => {
+      focusRow(d.r, d.start);
+      if (n === 0) tl.to(parts(1), { opacity: 0.4, duration: 0.3 }, d.start);
+      moveHl(hA, union(D.M[d.r].map((_, k) => m(d.r, k))), d.start, false);
+      moveHl(hB, box($("vecP")), d.start, false);
+      tl.fromTo($(`res-${d.r}`), { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(3)" }, d.pop);
+    });
+
+    // 15–20：第 4 列与 w 同时高亮，展开式里的第 4 项一起提亮
+    all.forEach((e) => tl.to(e, { opacity: e.id.endsWith("-3") ? 1 : 0.4, duration: 0.3, ease: "power2.out" }, B.col));
+    D.V.forEach((_, k) => tl.to(v(k), { opacity: k === 3 ? 1 : 0.4, duration: 0.3 }, B.col));
+    [0, 1].forEach((r) => tl.to($(`t-${r}-3`), { opacity: 1, duration: 0.3 }, B.col));
+    moveHl(hA, union(D.M.map((_, r) => m(r, 3))), B.col, false);
+    moveHl(hB, box(v(3)), B.col, false);
+    const hC = mkHl(), hD = mkHl();
+    [hC, hD].forEach((h, r) => moveHl(h, box($(`t-${r}-3`)), B.col, true));
+    tl.fromTo("#cap2", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, B.cap2);
+
+    tl.set({}, {}, D.duration);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["main"] = tl;
+  });
+})();
+    </script>
+  </body>
+</html>

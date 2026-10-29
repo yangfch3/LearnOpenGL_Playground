@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="assets/shared/vendor/gsap/gsap.min.js"></script>
+    <script src="assets/data/c.js"></script>
+    <script src="assets/text/zh-CN.js"></script>
+    <style>
+      @font-face {
+        font-family: "Noto Sans SC";
+        src: url("assets/shared/fonts/NotoSansSC-VF.ttf") format("truetype");
+        font-weight: 100 900;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #11161d; }
+      #root { width: 100%; height: 100%; font-family: "Noto Sans SC", sans-serif; color: #edf1f7; }
+      #base { position: absolute; inset: 0; z-index: 0; }
+      #title { position: absolute; left: 96px; top: 80px; font-size: 72px; font-weight: 700; }
+      .blk { position: absolute; width: 80px; height: 80px; background: #ff8033; }
+      .bit { position: absolute; width: 24px; height: 24px; background: #000; }
+      .layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+      #gl { z-index: 1; }
+      #mn { z-index: 2; }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="10" data-width="1920" data-height="1080">
+      <div id="base" class="clip" data-start="0" data-duration="10" data-track-index="0" data-layout-allow-overlap>
+        <div id="title"></div>
+        <div id="hfblk" class="blk"></div>
+        <div id="bits"></div>
+      </div>
+      <video id="gl" class="clip layer" src="assets/clips/gl.mov" muted playsinline data-start="0" data-duration="10" data-track-index="1"></video>
+      <video id="mn" class="clip layer" src="assets/clips/manim.mov" muted playsinline data-start="0" data-duration="10" data-track-index="2"></video>
+    </div>
+    <script>
+      const D = window.C, T = window.TEXT, [cx, cy] = D.calib.hf;
+      document.getElementById("title").textContent = T["c.title"];
+      Object.assign(document.getElementById("hfblk").style, { left: `${cx}px`, top: `${cy}px` });
+      const bits = [...Array(8)].map((_, b) => {
+        const e = document.createElement("div");
+        e.className = "bit";
+        e.style.cssText = `left:${cx + D.bitX + b * D.bitStep}px;top:${cy + D.bitY}px`;
+        return document.getElementById("bits").appendChild(e);
+      });
+      const tl = gsap.timeline({ paused: true });
+      const clock = { t: 0 };
+      tl.fromTo(clock, { t: 0 }, {
+        t: D.duration, duration: D.duration, ease: "none",
+        onUpdate: () => {
+          const f = Math.round(clock.t * D.fps);
+          bits.forEach((e, b) => (e.style.background = (f >> (7 - b)) & 1 ? "#fff" : "#000"));
+        },
+      }, 0);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

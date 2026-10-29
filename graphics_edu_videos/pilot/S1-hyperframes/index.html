@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="assets/shared/vendor/gsap/gsap.min.js"></script>
+    <script src="assets/data/s1.js"></script>
+    <script src="assets/text/zh-CN.js"></script>
+    <style>
+      @font-face {
+        font-family: "Noto Sans SC";
+        src: url("assets/shared/fonts/NotoSansSC-VF.ttf") format("truetype");
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #11161d; --surface: #1b222c; --disabled: #5a6577; --ink-dim: #9aa6b8; --ink: #edf1f7;
+        --shader: #ff7ac8; --shader-15: #352537;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+      #root { width: 100%; height: 100%; font-family: "Noto Sans SC", sans-serif; color: var(--ink); }
+      #stage, #map, #anno { position: absolute; inset: 0; }
+      .seg { position: absolute; height: 3px; background: var(--ink-dim); opacity: 0.4; }
+      .seg-lit { position: absolute; height: 3px; background: var(--ink); transform-origin: 0 50%; }
+      .node {
+        position: absolute; width: 48px; height: 48px; border-radius: 12px;
+        background: var(--surface); border: 3px solid var(--ink-dim);
+      }
+      .vdot { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); }
+      #screen { position: absolute; width: 120px; height: 76px; border: 3px solid var(--ink-dim); border-radius: 8px; }
+      #flow { position: absolute; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); opacity: 0; }
+      .label {
+        position: absolute; width: 300px; text-align: center; white-space: nowrap;
+        font-size: 36px; font-weight: 500; line-height: 50px;
+      }
+      .note { font-size: 32px; color: var(--ink-dim); line-height: 44px; }
+      .tag {
+        position: absolute; width: 76px; height: 48px; text-align: center; line-height: 42px;
+        font-size: 32px; font-weight: 500; color: var(--ink-dim);
+        background: var(--surface); border: 3px solid var(--ink-dim); border-radius: 12px; opacity: 0;
+      }
+      #opt {
+        position: absolute; top: 220px; height: 80px; padding: 0 28px; line-height: 74px; white-space: nowrap;
+        font-size: 36px; font-weight: 500; color: var(--ink-dim);
+        border: 3px dashed var(--disabled); border-radius: 12px; opacity: 0;
+      }
+      #optlinks, .arrow { position: absolute; left: 0; top: 0; overflow: visible; }
+      #optlinks { opacity: 0; }
+      .arrow { opacity: 0; }
+      .cap {
+        position: absolute; left: 0; width: 1920px; top: 836px; text-align: center;
+        font-size: 44px; font-weight: 400; line-height: 1.4; opacity: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="20.1" data-width="1920" data-height="1080">
+      <div id="stage" class="clip" data-start="0" data-duration="20.1" data-track-index="0">
+        <div id="map" data-layout-allow-overlap></div>
+        <div id="anno" data-layout-allow-overlap></div>
+        <div id="capOpt" class="cap" data-hold></div>
+        <div id="capShader" class="cap" data-hold></div>
+        <div id="capFixed" class="cap" data-hold></div>
+      </div>
+      <audio id="sfx" class="clip" data-start="0" data-duration="20.1" data-track-index="1" data-volume="1" src="assets/sfx/s1.wav"></audio>
+    </div>
+    <script>
+      const D = window.S1, T = window.TEXT, B = D.beats, Y = D.trackY, NS = "http://www.w3.org/2000/svg";
+      const el = (tag, cls, css, parent, text) => {
+        const e = Object.assign(document.createElement(tag), { className: cls });
+        e.style.cssText = css;
+        if (text !== undefined) e.textContent = text;
+        parent.appendChild(e);
+        return e;
+      };
+      const svg = (parent, w, h) => {
+        const s = document.createElementNS(NS, "svg");
+        s.setAttribute("width", w); s.setAttribute("height", h);
+        parent.appendChild(s);
+        return s;
+      };
+      const path = (s, d, attrs) => {
+        const p = document.createElementNS(NS, "path");
+        p.setAttribute("d", d);
+        Object.entries(attrs).forEach(([k, v]) => p.setAttribute(k, v));
+        s.appendChild(p);
+        return p;
+      };
+      const map = document.getElementById("map"), anno = document.getElementById("anno");
+      const tl = gsap.timeline({ paused: true });
+
+      // 起点：3 点图标；终点：屏幕
+      [[-22, 18], [22, 18], [0, -20]].forEach(([dx, dy]) => el("div", "vdot", `left:${D.srcX + dx - 8}px;top:${Y + dy - 8}px`, map));
+      el("div", "", `left:${D.dstX - 60}px;top:${Y - 38}px`, map).id = "screen";
+      el("div", "label", `left:${D.srcX - 150}px;top:536px`, anno, T["s1.src"]);
+      el("div", "label", `left:${D.dstX - 150}px;top:536px`, anno, T["s1.dst"]);
+
+      // 轨道：src → 9 站 → dst；前 8 段已点亮
+      const xs = [D.srcX, ...D.stX, D.dstX];
+      const half = (k) => (k === 0 ? 40 : k === xs.length - 1 ? 62 : 24);
+      const lits = [];
+      for (let k = 0; k < xs.length - 1; k++) {
+        const x0 = xs[k] + half(k) + 6, x1 = xs[k + 1] - half(k + 1) - 6;
+        el("div", "seg", `left:${x0}px;top:${Y - 1.5}px;width:${x1 - x0}px`, map);
+        if (k < 9) lits.push(el("div", "seg-lit", `left:${x0}px;top:${Y - 1.5}px;width:${x1 - x0}px`, map));
+      }
+      const nodes = D.stX.map((x) => el("div", "node", `left:${x - 24}px;top:${Y - 24}px`, map));
+      const labels = D.stX.map((x, i) =>
+        el("div", "label", `left:${x - 150}px;top:${i % 2 ? 520 : 390}px`, anno, T[`s1.st${i}`]));
+      el("div", "label note", `left:${D.stX[7] - 150}px;top:570px`, anno, T["s1.st7note"]);
+
+      // 起始帧：前 8 站已点亮，帧缓冲未点亮
+      tl.fromTo(lits[8], { scaleX: 0 }, { scaleX: 1, duration: B.lit - B.flow, ease: "none" }, B.flow);
+      tl.fromTo([nodes[8], labels[8]], { opacity: 0.4 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, B.lit);
+      tl.fromTo(nodes[8], { scale: 1 }, { scale: 1.08, duration: 0.12, ease: "power2.out", yoyo: true, repeat: 1 }, B.lit);
+      const flow = el("div", "", `left:${D.stX[7] + 24}px;top:${Y - 8}px`, map);
+      flow.id = "flow";
+      tl.fromTo(flow, { x: 0, opacity: 0 }, { x: D.stX[8] - D.stX[7] - 56, opacity: 1, duration: B.lit - B.flow, ease: "power1.in" }, B.flow);
+      tl.to(flow, { opacity: 0, duration: 0.15 }, B.lit);
+
+      // 可选阶段：图元装配与裁剪之间，虚线支路通往上方虚线框
+      const mid = (D.stX[1] + D.stX[2]) / 2;
+      const opt = el("div", "", `left:${mid}px`, anno, T["s1.opt"]);
+      opt.id = "opt";
+      const links = svg(anno, 1920, 1080);
+      links.id = "optlinks";
+      path(links, `M${mid - 30} ${Y - 6} V300 M${mid + 30} 300 V${Y - 6}`,
+        { stroke: "#5a6577", "stroke-width": 3, "stroke-dasharray": "10 8", fill: "none" });
+      tl.fromTo(opt, { xPercent: -50, y: 40, opacity: 0 }, { xPercent: -50, y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, B.opt);
+      tl.fromTo(links, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "power2.out" }, B.opt);
+
+      const caption = (id, key, at, out) => {
+        const c = document.getElementById(id);
+        c.textContent = T[key];
+        tl.fromTo(c, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, at);
+        tl.to(c, { opacity: 0, duration: 0.3, ease: "power2.in" }, out);
+      };
+      caption("capOpt", "s1.cap.opt", B.opt, B.capOptOut);
+
+      // 着色器两站：换可编程样式，下方箭头指向
+      tl.to([opt, links], { opacity: 0.4, duration: 0.3, ease: "power2.in" }, B.capOptOut);
+      const arrows = [];
+      D.shader.forEach((i, k) => {
+        const at = B.shader + k * B.shaderGap;
+        tl.to(nodes[i], { backgroundColor: "#352537", borderColor: "#ff7ac8", duration: 0.25, ease: "power2.out" }, at);
+        tl.fromTo(nodes[i], { scale: 1 }, { scale: 1.08, duration: 0.125, ease: "power2.out", yoyo: true, repeat: 1 }, at);
+        tl.to(labels[i], { color: "#ff7ac8", duration: 0.25, ease: "power2.out" }, at);
+        const a = svg(anno, 1920, 1080);
+        a.setAttribute("class", "arrow");
+        path(a, `M${D.stX[i]} ${Y + 130} V${Y + 40} M${D.stX[i] - 14} ${Y + 54} L${D.stX[i]} ${Y + 40} L${D.stX[i] + 14} ${Y + 54}`,
+          { stroke: "#ff7ac8", "stroke-width": 4, fill: "none", "stroke-linecap": "round", "stroke-linejoin": "round" });
+        tl.fromTo(a, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, at);
+        arrows.push(a);
+      });
+      caption("capShader", "s1.cap.shader", B.shader, B.capShaderOut);
+
+      // 其余各站标「固定」：标签的另一侧
+      tl.to(arrows, { opacity: 0.4, duration: 0.3, ease: "power2.in" }, B.capShaderOut);
+      D.fixed.forEach((i, k) => {
+        const tag = el("div", "tag", `left:${D.stX[i] - 38}px;top:${i % 2 ? 392 : 520}px`, anno, T["s1.fixed"]);
+        tl.fromTo(tag, { opacity: 0, y: i % 2 ? 12 : -12 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, B.fixed + k * B.fixedGap);
+      });
+      caption("capFixed", "s1.cap.fixed", B.fixed, B.capFixedOut);
+
+      // 收拢成顶部进度条：文字退场，地图缩放上移
+      tl.to(anno, { opacity: 0, duration: 0.3, ease: "power2.in" }, B.capFixedOut);
+      tl.fromTo(map, { scale: 1, y: 0, transformOrigin: `960px ${Y}px` },
+        { scale: D.bar.scale, y: D.bar.y - Y, duration: B.shrinkDur, ease: "power2.inOut" }, B.shrink);
+
+      tl.set({}, {}, D.duration);
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = tl;
+    </script>
+  </body>
+</html>

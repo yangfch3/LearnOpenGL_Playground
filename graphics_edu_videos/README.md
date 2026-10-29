@@ -11,16 +11,16 @@ graphics_edu_videos/
 │  └─ 1.1_你好三角形/  每集一个目录：知识点、分镜
 ├─ pilot/       试点 A 段探针，每个「探针 × 工具」一个子目录，如 S1-hyperframes/、S1-manim/
 ├─ episodes/    成片工程，每集一个 HyperFrames 项目，如 ep1.1-hello-triangle/
-├─ shared/      跨集复用：fonts/ 字体、vendor/ 第三方库（GSAP），以后加样式变量、组件、WGSL、Manim 公共模块
+├─ shared/      跨集复用：fonts/ 字体、vendor/ 第三方库、py/ Python 公共模块（文本表与音效、Manim 适配、空间校验、循环音乐）、js/ Three.js 低多边形组件
 ├─ tools/       辅助脚本
 ├─ Temp/        临时文件：探针、草稿、中间态（不入库）
 ├─ package.json / package-lock.json        锁定 HyperFrames
 └─ pyproject.toml / uv.lock / .python-version  锁定 Python 与 Manim
 ```
 
-- 不入库：`Temp/`、渲染产物（`renders/`、`media/`、`out/`、全部视频文件）、`node_modules/`、`.venv/`
+- 不入库：`Temp/`、渲染产物（`renders/`、`media/`、`out/`、全部视频文件）、脚本生成的音轨、`node_modules/`、`.venv/`
 - 所有临时操作放 `Temp/`，不用系统临时目录
-- Git LFS：字体、WAV
+- Git LFS：字体、非生成的 WAV
 - 目录按需创建，用到再建
 
 ## 环境基线
@@ -30,10 +30,11 @@ graphics_edu_videos/
 | 项 | 基线 | 锁定方式 |
 |---|---|---|
 | 系统 | Windows 11 x64 | 记录 |
-| GPU | 桌面独显，D3D12 下可创建 WebGPU 硬件 device（非回退 adapter）；参考档位 NVIDIA Ada（RTX 40 系），驱动 560.94 | 记录 |
+| GPU | 桌面独显，D3D12 下可创建 WebGPU 硬件 device（非回退 adapter）；参考档位 NVIDIA Ada（RTX 40 系），驱动 621.01 | 记录 |
 | Node.js | 22.x | 记录 |
 | HyperFrames | 0.8.210；agent skills 取同版本 tag | `package-lock.json`、`.kiro/skills/` |
 | GSAP | 3.14.2，本地文件，不走 CDN | `package-lock.json`、`shared/vendor/gsap/` |
+| KaTeX / Three.js | 0.19.1 / 0.186.1，本地文件 | `package-lock.json`、`shared/vendor/katex/`、`shared/vendor/three/` |
 | 渲染浏览器 | chrome-headless-shell 152.0.7977.30（版本写死在 HyperFrames 内，系统 Chrome 不参与出片） | `npx hyperframes browser ensure` |
 | FFmpeg | 9.0.2（gyan.dev full build） | 记录 |
 | Python / Manim CE | 3.12 / 0.22.1；包镜像见 `pyproject.toml` | `uv.lock` |
