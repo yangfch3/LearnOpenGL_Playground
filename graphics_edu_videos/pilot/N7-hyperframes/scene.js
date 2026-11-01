@@ -91,7 +91,7 @@ function buildPhone() {
   fx = new THREE.Mesh(new THREE.PlaneGeometry(52, 65.6), new THREE.MeshBasicMaterial({ map: fxTex.t, transparent: true, depthWrite: false }));
   fx.position.set(24, 0.2, 0.7); scene.add(fx);
 }
-export function build() { buildDesk(); buildLeaves(); buildPhone(); }
+export function build() { buildDesk(); buildLeaves(); if (G.D.d0) buildPhone(); }
 
 // 一张纸面贴图：平视时只画屏幕内那一块、与屏幕像素一一对齐；斜看或翻动时画整页
 function paint(pid, t, k, flat, shadows) {
@@ -142,7 +142,8 @@ export function update(t, k, flat) {
     }
   });
   leftShadow.material.opacity = Math.min(1, P.th[0] / Math.PI);
-  // 手机与溢出的数字
+  // 手机与溢出的数字（上集开场）
+  if (!phone) return;
   const d0 = G.D.b.phoneOut;
   phone.visible = t < d0[1] + 0.05;
   if (phone.visible) {

@@ -15,11 +15,28 @@ BAR = 60 / 90 * 4  # 90 BPM，一小节 2.667s
 BEAT = BAR / 4
 PW, PH = 48, 62
 # 纸张（leaf）：[正面, 背面]；翻过去后背面朝上成为左页
-LEAVES = [["cover", "inner"], ["p1", "p2"], ["p3", "p4"], ["p5", "p6"], ["p7", "p8"], ["p9", "p10"], ["p11", "end"]]
-PAGE_OF = {f: i for i, (f, b) in enumerate(LEAVES) for _ in (0,)}
-SIDE = {f: "R" for f, _ in LEAVES} | {b: "L" for _, b in LEAVES}
-PRECT = {pid: ([0, -31, 48, 31] if s == "R" else [-48, -31, 0, 31]) for pid, s in SIDE.items()}
+LEAVES, SIDE, PRECT = [], {}, {}
 FLIP = 0.9  # 翻页时长
+
+
+def use_leaves(lv):
+    """设定本集的纸张；原地改写，各段脚本 import 到的是同一份。"""
+    LEAVES[:] = lv
+    SIDE.clear(); SIDE.update({f: "R" for f, _ in lv} | {b: "L" for _, b in lv})
+    PRECT.clear(); PRECT.update({pid: ([0, -31, 48, 31] if s == "R" else [-48, -31, 0, 31]) for pid, s in SIDE.items()})
+
+
+use_leaves([["cover", "inner"], ["p1", "p2"], ["p3", "p4"], ["p5", "p6"], ["p7", "p8"], ["p9", "p10"], ["p11", "end"]])
+
+
+def project(c, p):
+    """世界点 → 屏幕像素，与 world.js makeCam().project 同式。"""
+    a, q = math.radians(c["yaw"]), math.radians(c["pitch"])
+    dx, dy, dz = p[0] - c["c"][0], p[1] - c["c"][1], p[2] if len(p) > 2 else 0.0
+    x1, y1 = dx * math.cos(a) + dy * math.sin(a), -dx * math.sin(a) + dy * math.cos(a)
+    yv, zv = y1 * math.cos(q) + dz * math.sin(q), -y1 * math.sin(q) + dz * math.cos(q)
+    w, f = max(0.05, 1 - c["k"] * zv), 540 / c["hh"]
+    return 960 + x1 / w * f, 540 - yv / w * f
 
 
 class TL:

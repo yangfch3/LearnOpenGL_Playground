@@ -55,6 +55,15 @@ def pencil(d, a=0.05, seed=0):
     return a * n / (np.abs(n).max() + 1e-9) * strokes * env(d, 0.01, 0.05)
 
 
+def felt(d, a=0.045, seed=0):
+    """软笔书写：约 250–900 Hz 的平滑噪声，只有缓慢起伏，不逐笔断续、不带高频颗粒；比铅笔声再低约 6 dB。"""
+    r = np.random.default_rng(seed)
+    n0 = noise(d, 2000)
+    n = lp(lp(n0, 900), 900) - lp(n0, 250)
+    sw = 0.8 + 0.2 * np.sin(2 * np.pi * r.uniform(1.6, 2.4) * tt(d) + r.uniform(0, 6.3))
+    return 0.2 * a * n / (np.abs(n).max() + 1e-9) * sw * env(d, min(0.08, d / 3), min(0.15, d / 3))
+
+
 def marker(d, a=0.05):
     """红笔圈画：低一些、连贯的摩擦声。"""
     n0 = noise(d, 4000)

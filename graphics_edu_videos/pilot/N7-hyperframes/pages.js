@@ -6,8 +6,9 @@ import { PAGES_A } from "./pagesA.js";
 import { PAGES_B } from "./pagesB.js";
 import { PAGES_C } from "./pagesC.js";
 import { PAGES_D } from "./pagesD.js";
+import { PAGES_E } from "./pagesE.js";
 
-const PAGES = { ...PAGES_A, ...PAGES_B, ...PAGES_C, ...PAGES_D };
+const PAGES = { ...PAGES_A, ...PAGES_B, ...PAGES_C, ...PAGES_D, ...PAGES_E };
 // shadows：[[x, y], ...] 多边形（世界坐标，已投到桌面），翻动的纸投下的影子
 export function drawPage(pid, t, shadows = []) {
   G.pid = pid; G.dim = tr(G.D, "dim", t);

@@ -168,5 +168,5 @@ function update2p(t) {
     B.sh.visible = true; const pts = hl.map((p) => [p[0], p[1], 0.155]); while (pts.length < 8) pts.push(pts[pts.length - 1]); setPoly(B.sh, pts.slice(0, 8));
   }
 }
-export function build3d() { build1d(); build2g(); build2p(); }
-export function update3d(t) { update1d(t); update2g(t); update2p(t); }
+export function build3d() { if (G.D.ep === 2) return; build1d(); build2g(); build2p(); }
+export function update3d(t) { if (G.D.ep === 2) return; update1d(t); update2g(t); update2p(t); }

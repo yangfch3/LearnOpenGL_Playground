@@ -162,6 +162,7 @@ export const latM = (D, t) => { const M = matAt(D, "M", t), u = tr(D, "latU", t)
 export function dynLabels(D, T, t) {
   const out = [], b = D.b;
   const push = (id, page, str, p, size, align, alpha, col = "hand") => out.push({ id, page, str, p, size, align, alpha, col, box: textBox(str, p, size, align) });
+  if (D.ep === 2) return out;
   if (t >= b.slide1[0] && t < D.segs["1d"] + 0.3) { // 1d 开场随镜头离开淡出
     const g = D.g1c, x = slideX(D, t), xi = Math.round(x), p = [g.o[0] + x * g.s, g.o[1] + (35 - x) * g.s];
     const s = `鸡 ${xi} · 兔 ${35 - xi} · 脚 ${2 * xi + 4 * (35 - xi)}`;

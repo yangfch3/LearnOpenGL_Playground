@@ -1,7 +1,7 @@
 """上集 2f（两台机器接着开）、2g（三维段 2）、2-post（三维段 3：地基）。"""
 import numpy as np
 
-from core import B, DATA, at, ann, end_at, get, track, flip, sfx, tl
+from core import B, DATA, at, ann, end_at, get, track, flip, sfx, tl, project
 from ep1_2 import O3, S3
 
 C_SPREAD = dict(c=[0.0, 3.0], hh=28.5)
@@ -65,15 +65,6 @@ def seg2g():
     tl.say("k3", hold=1.0)  # 接回 2e 的行列式与 1d 的三平面：≠ 0 才有唯一交点
     DATA["d2g"] = dict(o=O3, s=S3, n=1.6, cells=2, A=A3.tolist(), page="p10")
     return vol
-
-
-def project(c, p):  # 与 world.js makeCam().project 同式
-    a, q = np.radians(c["yaw"]), np.radians(c["pitch"])
-    dx, dy, dz = p[0] - c["c"][0], p[1] - c["c"][1], p[2]
-    x1, y1 = dx * np.cos(a) + dy * np.sin(a), -dx * np.sin(a) + dy * np.cos(a)
-    yv, zv = y1 * np.cos(q) + dz * np.sin(q), -y1 * np.sin(q) + dz * np.cos(q)
-    w, f = max(0.05, 1 - c["k"] * zv), 540 / c["hh"]
-    return 960 + x1 / w * f, 540 - yv / w * f
 
 
 def seg2post(vol):

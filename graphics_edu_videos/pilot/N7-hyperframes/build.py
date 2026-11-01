@@ -12,12 +12,17 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--ep", type=int, default=1, choices=[1, 2])
 ap.add_argument("--no-audio", action="store_true")
 ARGS = ap.parse_args()
-if ARGS.ep != 1: raise SystemExit("下集尚未编排")
 NAME = f"n7-ep{ARGS.ep}"
 
-import ep1_1, ep1_2, ep1_3, ep1_4  # noqa: E401,E402
-
-ep1_1.run(); ep1_2.run(); ep1_3.run(); ep1_4.run()
+if ARGS.ep == 1:
+    import ep1_1, ep1_2, ep1_3, ep1_4  # noqa: E401,E402
+    ep1_1.run(); ep1_2.run(); ep1_3.run(); ep1_4.run()
+    CAM0, LEAF0 = dict(c=[24.0, 0.0], hh=35.0, k=0.0, yaw=0.0, pitch=0.0), [0.0] * len(LEAVES)
+else:  # 下集：本子一开始就摊开（封面已翻到左边），每栋楼翻一页
+    K.use_leaves([["cover", "e0"], ["e1", "e2"], ["e3", "e4"], ["e5", "e6"], ["e7", "end"]])
+    import ep2_3  # noqa: E402
+    ep2_3.run()
+    CAM0, LEAF0 = dict(ep2_3.C_FLAT), [math.pi] + [0.0] * (len(LEAVES) - 1)
 duration = round(math.ceil((tl.t + 0.5) / BAR) * BAR, 3)
 for a in ANN:
     if a["t"][1] is None: a["t"][1] = duration
@@ -44,8 +49,8 @@ for i in range(len(LEAVES)):
 assert all(contrast(COL[k], COL["paper"]) >= v - 1e-9 for k, v in K.NEED.items())
 print("duration", duration, "segs", {k: round(v, 1) for k, v in tl.segs.items()}, "caps", len(CAPS))
 
-D = dict(name=NAME, col=COL, duration=duration, bar=BAR, segs=tl.segs, b=B, cam0=dict(c=[24.0, 0.0], hh=35.0, k=0.0, yaw=0.0, pitch=0.0),
-         cam=tl.cams, leaves=LEAVES, leaf0=[0.0] * len(LEAVES), flips=FLIPS, prect=PRECT, side=SIDE, ann=ANN, animals=ANIMALS,
+D = dict(name=NAME, ep=ARGS.ep, col=COL, duration=duration, bar=BAR, segs=tl.segs, b=B, cam0=CAM0,
+         cam=tl.cams, leaves=LEAVES, leaf0=LEAF0, flips=FLIPS, prect=PRECT, side=SIDE, ann=ANN, animals=ANIMALS,
          mats=MATS, tracks=TRACKS, caps=CAPS, capY=868, liftDur=0.5, pw=K.PW, ph=K.PH, **DATA)
 write_js(K.ROOT / f"assets/data/{NAME}.js", "N7", D)
 esc = lambda s_: s_.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")  # noqa: E731

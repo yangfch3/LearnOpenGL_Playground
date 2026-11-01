@@ -6,7 +6,7 @@ export const HL = "#F4D35E"; // 荧光笔
 const colOf = (c) => (c === "hand" ? (G.pid === "p1" ? G.C.pencil : G.C.hand) : c === "red" ? G.C.red : c === "ink" ? G.C.ink : G.C[c + "T"] || G.C[c] || c);
 let cacheT = -1, cache = [];
 function all(t) {
-  if (t !== cacheT) { cacheT = t; cache = labels(G.D, G.T, t).concat(dynLabels(G.D, G.T, t)); }
+  if (t !== cacheT) { cacheT = t; cache = labels(G.D, G.T, t).concat(dynLabels(G.D, G.T, t), G.F3 ? G.F3.labels(G.T, t) : []); }
   return cache;
 }
 export function drawAnn(pid, t, filt = null) {

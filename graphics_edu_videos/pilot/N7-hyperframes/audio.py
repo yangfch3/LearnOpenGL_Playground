@@ -7,7 +7,7 @@ import numpy as np
 
 import common as CM
 from common import SR, Track, lp, tt, env, mallet, thump
-from sound import (RS, noise, f_, THEME, CHORDS, ROOT, piano, strings, lowpad, pencil, marker, tick, puff, boing, squeak, lufs, true_peak, limit, mix)
+from sound import (RS, noise, f_, THEME, CHORDS, ROOT, piano, strings, lowpad, pencil, marker, felt, tick, puff, boing, squeak, lufs, true_peak, limit, mix)
 
 
 def _io2(u):
@@ -25,6 +25,7 @@ def track_at(v0, keys, t):  # 与 world.js track 同式（标量 / 矩阵）
 
 def stage(D, t):
     s = D["segs"]
+    if D.get("ep") == 2: return "matrix"
     if t < s["1b"]: return "box"
     if t < s["1d"]: return "piano"
     if t < s["1p"]: return "piano+"
@@ -45,16 +46,18 @@ def music(D):
             tr.place(max(0.0, t0 - 1.0), strings([f_(n, -1) for n in ch], d, 0.0028 if st != "breath" else 0.0034, 1.8, 2.0))
         if st == "matrix": tr.place(max(0.0, t0 - 1.0), lowpad(f_(ROOT[(k // 2) % 4], -2), d, 0.035, 1.6, 1.8))
     # 主题：开场（八音盒）与收尾（钢琴，落在主和弦）各一遍；讲道理的地方只留底
-    for p0, inst in ((0.0, "box"), (D["segs"]["2p"], "piano")):
+    themes = ((0.0, "box"), (D["segs"]["2p"], "piano")) if D.get("ep", 1) == 1 else ()
+    for p0, inst in themes:
         p = p0
         for n, o, d in THEME:
             if p < dur - 1.5:
                 tr.place(p, mallet(f_(n, o + 1), 0.03, 0.6, RS) if inst == "box" else piano(f_(n, o), 0.034, max(1.2, d * beat * 2.5)))
             p += d * beat
-    end = D["segs"]["2p"] + len(THEME) and D["segs"]["2p"] + sum(x[2] for x in THEME) * beat
-    tr.place(end, mix(*(piano(f, 0.03, 3.5) for f in (f_("C", -1), f_("E", 0), f_("G", 0), f_("C", 1)))))
+    if themes:
+        end = D["segs"]["2p"] + sum(x[2] for x in THEME) * beat
+        tr.place(end, mix(*(piano(f, 0.03, 3.5) for f in (f_("C", -1), f_("E", 0), f_("G", 0), f_("C", 1)))))
     tq = np.arange(len(tr.buf)) / SR
-    q0, q1 = b["quiet"]
+    q0, q1 = b.get("quiet", [1e9, 1e9])
     g = 1 - np.clip((tq - q0) / 0.12, 0, 1) * np.clip((q1 + 1.0 - tq) / 1.0, 0, 1)  # 压扁的闷响后安静一拍
     g *= np.clip(tq / 1.5, 0, 1) * np.clip((dur - tq) / 2.5, 0, 1)
     return lp(tr.buf, 3000) * g
@@ -74,16 +77,19 @@ def drone(D, t0, t1, detf, end_zero=False):
 
 def sfx(D):
     tr = Track(D["duration"]); put = tr.place
+    soft = D.get("ep") == 2  # 下集：书写、圈画都用平滑的软笔声
+    pen = (lambda d, s: felt(d, 0.045, s)) if soft else (lambda d, s: pencil(d, 0.045, s))
+    red = (lambda d: felt(d, 0.05, 7)) if soft else (lambda d: marker(d, 0.05))
     for a in D["ann"]:  # 书写与圈画：长度 = 书写时长
         if not a.get("w") or a["w"][0] < 0: continue
         d = max(0.15, a["w"][1] - a["w"][0])
-        put(a["w"][0], marker(d, 0.05) if a["col"] == "red" or a.get("kind") == "ring" else pencil(d, 0.045, abs(hash(a["id"])) % 1000))
-    M = D["mats"]["M"]
+        put(a["w"][0], red(d) if a["col"] == "red" or a.get("kind") == "ring" else pen(d, abs(hash(a["id"])) % 1000))
+    M = D["mats"].get("M", dict(m0=np.eye(2).tolist(), keys=[]))
     for t0, t1, N, *_ in M["keys"]:
         zero = abs(np.linalg.det(np.array(N))) < 1e-9
         put(*drone(D, t0, t1, lambda x: np.linalg.det(track_at(M["m0"], M["keys"], x)), zero))
         put(t0, lp(noise(t1 - t0, 900, 0.05) * np.sin(np.pi * tt(t1 - t0) / (t1 - t0)) ** 2, 600))
-    A = np.array(D["mats"]["M"]["m0"]); A3 = np.array(D["d2g"]["A"], float); I2, I3 = np.eye(2), np.eye(3)
+    A = np.array(M["m0"]); A3 = np.array(D["d2g"]["A"], float) if "d2g" in D else np.eye(3); I2, I3 = np.eye(2), np.eye(3)
     for t, kind, *args in D["sfx"]:
         d = args[0] if args and isinstance(args[0], (int, float)) else 0.5
         if kind == "land": put(t, mix(mallet(260 if args[0] != "chicken" else 330, 0.025, 0.04, RS), tick(0.015, 900)))
@@ -93,8 +99,8 @@ def sfx(D):
         elif kind == "page": put(t, lp(noise(0.9, 5000, 0.06) * np.sin(np.pi * tt(0.9) / 0.9) ** 1.5, 3500)); put(t + 0.85, tick(0.03, 1200))
         elif kind == "tick": put(t, tick(0.035, args[0]))
         elif kind == "mallet": put(t, mallet(args[0], 0.022, 0.12, RS))
-        elif kind == "pencil": put(t, pencil(d, 0.04, int(t * 10) % 997))
-        elif kind == "marker": put(t, marker(d, 0.045))
+        elif kind == "pencil": put(t, pen(d, int(t * 10) % 997))
+        elif kind == "marker": put(t, red(d))
         elif kind == "puff": put(t, puff(0.07))
         elif kind == "chime": put(t, mix(mallet(args[0], 0.03, 0.5, RS), mallet(args[0] * 2, 0.012, 0.3, RS)))
         elif kind in ("rise", "grow", "fold", "stretch", "swell", "whoosh", "slide", "spill", "gather", "rain"):
@@ -109,13 +115,34 @@ def sfx(D):
         elif kind == "grid": put(*drone(D, t, t + d, lambda x: np.linalg.det(I2 + (A - I2) * _io2(min(1, max(0, (x - t) / d)))) * 0.5 + 0.5))
         elif kind == "grid3": put(*drone(D, t, t + d, lambda x: np.linalg.det(I3 + (A3 - I3) * _io2(min(1, max(0, (x - t) / d)))) / 6))
         elif kind == "morph2": put(t, mix(lp(noise(d, 900, 0.04) * np.sin(np.pi * tt(d) / d) ** 2, 600), CM.glide(330, 440, d, 0.012)))
+        elif kind == "slap": put(t, lp(noise(0.12, 2200, 0.05) * np.exp(-tt(0.12) / 0.025), 1600)); put(t, lp(thump(0.05, 140), 500))  # 便签拍上
+        elif kind == "shutter": put(t, mix(tick(0.07, 3200), lp(noise(0.06, 4000, 0.03) * np.exp(-tt(0.06) / 0.015), 3500))); put(t + 0.09, tick(0.06, 2400))
+        elif kind == "sand": put(t, grains(d))
+        elif kind == "descend": put(*drone_glide(t, d, 196, 98))
     return tr.buf
+
+
+def grains(d, rate=90):
+    """细沙：一串压低的细碎颗粒声，去掉刺耳的高频，两头渐入渐出。"""
+    r = np.random.default_rng(int(d * 1000))
+    out = np.zeros(int(d * SR))
+    for t0 in np.sort(r.uniform(0, d - 0.03, int(rate * d))):
+        g = lp(noise(0.012, 3800, 1.0), 3000) * np.exp(-tt(0.012) / 0.003) * r.uniform(0.3, 1.0)
+        i = int(t0 * SR); out[i:i + len(g)] += g[:len(out) - i]
+    return 0.012 * out * np.sin(np.pi * tt(d) / d) ** 0.7
+
+
+def drone_glide(t, d, f0, f1):
+    """持续音下行（偏差在变小）：两头渐入渐出。"""
+    n = int(d * SR); fr = f0 * (f1 / f0) ** (np.arange(n) / n); ph = 2 * np.pi * np.cumsum(fr) / SR
+    e = np.minimum(tt(d) / 0.4, 1) * np.minimum((d - tt(d)) / 0.6, 1).clip(0)
+    return t, lp((np.sin(ph) + 0.3 * np.sin(2 * ph)) * 0.03 * e, 600)
 
 
 def make(D, path):
     m = music(D) * 0.5  # 音乐退到动作音之下，只作底
     s = sfx(D)
-    q0, q1 = D["b"]["quiet"]
+    q0, q1 = D["b"].get("quiet", [1e9, 1e9])
     tq = np.arange(len(s)) / SR
     x = m + s * np.where((tq > q0 + 0.35) & (tq < q1), 0.15, 1.0)
     for _ in range(3):
