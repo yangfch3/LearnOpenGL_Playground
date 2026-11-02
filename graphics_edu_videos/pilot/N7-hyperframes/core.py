@@ -50,9 +50,12 @@ class TL:
         self.b[name] = [round(x, 3) for x in v] if isinstance(v, (list, tuple)) else round(v, 3)
         return v
 
-    def say(self, key, pre=0.2, hold=0.0, st="say", xy=None):
-        """st：say（底部字幕）/ note（手写批注，底部偏右）/ title（承上启下的标题卡，默认画面正中；xy 为屏幕中心像素）。"""
-        t0 = self.t + pre
+    def say(self, key, pre=0.2, hold=0.0, st="say", xy=None, t0=None, act=None):
+        """st：say（底部字幕）/ note（手写批注，底部偏右）/ title（承上启下的标题卡，默认画面正中；xy 为屏幕中心像素）。
+        给了 t0：字幕挂在画面动作上，从 t0 起，不推游标（时间线由动作排，阅读时长只在 build 里断言）。
+        act = [起, 止]：〔〕里的字跟着画面变（如褪成灰色）。"""
+        move = t0 is None
+        t0 = self.t + pre if move else t0
         t1 = t0 + read_need(TX[key]) + 0.25 + hold
         n = sum(1.0 if ord(ch) > 0x2E80 else 0.55 for ch in TX[key])  # 字宽（字号倍数）：全角 1，其余约 0.55
         x, y, size = dict(say=(960, 868, 52), note=(1240, 880, 50), title=(960, 540, 110))[st]
@@ -60,10 +63,10 @@ class TL:
         w = n * (size + 2) + dict(say=12, note=40, title=130)[st]  # 字距、关键词衬底、标题卡胶带与倾斜的余量
         h = size * (1.7 if st == "title" else 1.4)
         self.caps.append(dict(k=key, t0=round(t0, 3), t1=round(t1, 3), st=st, x=x, y=y, size=size,
-                              box=[round(x - w / 2), round(y - h / 2), round(x + w / 2), round(y + h / 2)]))
+                              box=[round(x - w / 2), round(y - h / 2), round(x + w / 2), round(y + h / 2)], **({"act": [round(v, 3) for v in act]} if act else {})))
         if st == "title": SFX.append([round(t0, 3), "tape"])
         self.b[key], self.b[key + "_e"] = round(t0, 3), round(t1, 3)
-        self.t = t1
+        if move: self.t = t1
         return t0
 
     def wait(self, d):
@@ -183,8 +186,8 @@ def flip(i, t0, back=False):
 # ---- 颜色：对纸色实算对比度，文字 ≥ 4.5、图形 ≥ 3；不达标就加深（不改语义）。xxT 为该色写成文字时用的版本 ----
 COL = dict(paper="#F7F3E8", ink="#1E2638", hand="#1F3B6E", pencil="#4A4A4A", red="#D23C2C", chick="#C8621F", rabbit="#6E4E9E",
            duck="#3F8F6B", fly="#2A8FA3", grid="#A9C6E0", rule="#B8C9DC", desk="#8A6E55", cover="#5F7F96", beak="#E8B04A",
-           chickBody="#F3C9A0", rabbitBody="#D9CFEA", duckBody="#BFDCCB", flyBody="#BFE3EA")
-NEED = dict(ink=4.5, hand=4.5, pencil=4.5, red=4.5, chick=3.0, rabbit=3.0, duck=3.0, fly=3.0)
+           chickBody="#F3C9A0", rabbitBody="#D9CFEA", duckBody="#BFDCCB", flyBody="#BFE3EA", gray="#777777")
+NEED = dict(ink=4.5, hand=4.5, pencil=4.5, red=4.5, chick=3.0, rabbit=3.0, duck=3.0, fly=3.0, gray=4.5)
 for _k in ("chick", "rabbit", "duck", "fly", "red"): COL[_k + "T"] = COL[_k]; NEED[_k + "T"] = 4.5
 
 

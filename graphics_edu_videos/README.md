@@ -6,7 +6,7 @@
 
 ```
 graphics_edu_videos/
-├─ docs/        系列级：预研、工程约定、风格规范、系列大纲
+├─ docs/        通用：制作 CheckList、创作原则、风格规范、工程约定；LearnOpenGL 系列：系列规范、预研、系列大纲
 │  ├─ 试点/            试点计划、探针
 │  └─ 1.1_你好三角形/  每集一个目录：知识点、分镜
 ├─ pilot/       试点 A 段探针，每个「探针 × 工具」一个子目录，如 S1-hyperframes/、S1-manim/

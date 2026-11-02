@@ -26,9 +26,13 @@ const PACE = { say: [0.03, 0.18], note: [0.07, 0.12], title: [0.09, 0.14] };
 const caps = D.caps.map((c, i) => {
   const el = document.getElementById("cap" + i), ch = [...el.querySelectorAll(".c")];
   const kws = [...el.querySelectorAll(".kw")].map((k) => ({ k, end: ch.indexOf([...k.querySelectorAll(".c")].pop()) }));
-  return { c, el, ch, kws, tape: el.querySelector(".tape") };
+  return { c, el, ch, kws, tape: el.querySelector(".tape"), acts: [...el.querySelectorAll(".act")] };
 });
-function capAt(t, { c, el, ch, kws, tape }) {
+function capAt(t, { c, el, ch, kws, tape, acts }) {
+  if (c.act && t >= c.t0 - 0.05 && t <= c.t1 + 0.05) { // 〔〕里的字跟着画面一起褪色
+    const u = W.seg(t, c.act[0], c.act[1], W.E.sine), col = mixHex(D.col.ink, D.col.gray, u);
+    for (const a of acts) a.style.color = col;
+  }
   if (t < c.t0 - 0.05 || t > c.t1 + 0.05) return;
   const [dt, fd] = PACE[c.st], o = 1 - clamp01((t - (c.t1 - 0.3)) / 0.3), t0 = c.t0 + (tape ? 0.22 : 0);
   if (tape) { const u = clamp01((t - c.t0) / 0.3); tape.style.transform = `scaleX(${(1 - (1 - u) ** 3).toFixed(4)})`; el.style.opacity = o.toFixed(3); }

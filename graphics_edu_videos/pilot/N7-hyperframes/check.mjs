@@ -44,20 +44,28 @@ for (let f = 0; f <= D.duration * 30; f++) {
     const cube = F3.pop(t) > 0.01 ? sbox(k, F3.cubeCorners(t)) : null, ph = sbox(k, F3.phoneCorners(t));
     const nb = D.ann.find((a) => a.id === "note"), noteOn = nb && t >= nb.t[0];
     const nS = noteOn ? sbox(k, [[nb.box[0], nb.box[1]], [nb.box[2], nb.box[1]], [nb.box[0], nb.box[3]], [nb.box[2], nb.box[3]]]) : null;
+    // 取景跟着焦点走：物体要么整个在画内，要么整个在画外；镜头停住时被画框切一半才算错
+    const still = v < 0.5, cut = (s) => !inScr(s) && s[2] > 0 && s[0] < 1920 && s[3] > 0 && s[1] < 1080;
     for (const [id, s] of [["立方体", cube], ["手机", ph], ["便签", nS]]) {
       if (!s) continue;
-      if (!inScr(s)) R.flag(`${id}出画`, t);
-      if (capOn && s[3] >= 800) R.flag(`${id}进字幕带`, t);
+      if (still && cut(s)) R.flag(`${id}被画框切到`, t);
+      if (capOn && s[3] >= 800 && s[1] < 1080 && s[2] > 0 && s[0] < 1920) R.flag(`${id}进字幕带`, t);
     }
+    const PH = scrPts(k, F3.phoneCorners(t));
+    for (const a of L) if ((!a.t || a.t[0] >= segStart - 1e-6) && polyHit(PH, scrPts(k, [[a.box[0], a.box[1]], [a.box[2], a.box[1]], [a.box[0], a.box[3]], [a.box[2], a.box[3]]]))) R.flag(`手机压到纸上的字 ${a.id}`, t);
     if (cube && nS && polyHit(scrPts(k, F3.cubeCorners(t)), scrPts(k, [[nb.box[0], nb.box[1]], [nb.box[2], nb.box[1]], [nb.box[0], nb.box[3]], [nb.box[2], nb.box[3]]])))
       R.flag("立方体压到便签", t);
-    if (cube) { const H = scrPts(k, F3.cubeCorners(t)); for (const a of L) if (a.page === "e1" && polyHit(H, scrPts(k, [[a.box[0], a.box[1]], [a.box[2], a.box[1]], [a.box[0], a.box[3]], [a.box[2], a.box[3]]]))) R.flag(`立方体压到纸上的字 ${a.id}`, t); }
+    const onS = (a) => { const s = sbox(k, [[a.box[0], a.box[1]], [a.box[2], a.box[3]]]); return s[2] > 0 && s[0] < 1920 && s[3] > 0 && s[1] < 1080; };
+    if (cube && (still || D.ep !== 2)) { const H = scrPts(k, F3.cubeCorners(t)); for (const a of L) if (a.page === "e1" && onS(a) && polyHit(H, scrPts(k, [[a.box[0], a.box[1]], [a.box[2], a.box[1]], [a.box[0], a.box[3]], [a.box[2], a.box[3]]]))) R.flag(`立方体压到纸上的字 ${a.id}`, t); }
+    const SB = [];
     for (const sp of F3.sprites(T, t)) {
       if (sp.alpha < 0.02) continue;
       const p = C.project(k, sp.p), w = W.textW(sp.str, sp.size) * 540 / k.hh / p[2], h = sp.size * 540 / k.hh / p[2];
       const s = [p[0] - w / 2, p[1] - h / 2, p[0] + w / 2, p[1] + h / 2];
-      if (!inScr(s)) R.flag(`立体文字出画 ${sp.id}`, t);
-      if (capOn && s[3] >= 800) R.flag(`立体文字进字幕带 ${sp.id}`, t);
+      for (const [id2, s2] of SB) if (W.overlap(s, s2)) R.flag(`立体文字互压 ${sp.id} × ${id2}`, t);
+      SB.push([sp.id, s]);
+      if (still && cut(s)) R.flag(`立体文字被画框切到 ${sp.id}`, t);
+      if (capOn && s[3] >= 800 && s[1] < 1080) R.flag(`立体文字进字幕带 ${sp.id}`, t);
       if (nS && W.overlap(s, nS)) R.flag(`立体文字压到便签 ${sp.id}`, t);
     }
   }
@@ -70,6 +78,7 @@ for (let f = 0; f <= D.duration * 30; f++) {
     const fresh = !a.t || a.t[0] >= segStart - 1e-6;
     if (capOn && fresh && onScr && s[3] >= 800 && s[1] < 1080) R.flag(`标注进字幕带 ${a.id}`, t);
     if (fresh && onScr && tbox.some((q) => W.overlap(s, q))) R.flag(`标注压到标题卡 ${a.id}`, t);
+    if (D.ep === 2 && v < 0.5 && fresh && onScr && !inScr(s)) R.flag(`标注被画框切到 ${a.id}`, t);
     for (let j = i + 1; j < L.length; j++) {
       const o = L[j];
       if (allow.has(a.id + "|" + o.id) || allow.has(o.id + "|" + a.id)) continue;

@@ -84,8 +84,50 @@ export function build3e() {
   for (let i = 0; i < F.pw * F.ph; i++) { const c = F3.rgbAt(i % F.pw, Math.floor(i / F.pw)); id.data.set([c[0], c[1], c[2], 255], i * 4); }
   pctx.putImageData(id, 0, 0);
   const ink = G.C.hand, N = F.nx * F.ny;
+  const fph = document.createElement("canvas"); fph.width = F.pw; fph.height = F.ph; // 滤镜后的照片（Mf 变了才重算）
+  const fctx = fph.getContext("2d");
   X = { card, phone, photo, cardKey: "", edges: lines(ink, 2.2, 0.55), axes: lines(ink, 3.4, 0.95), drop: lines(G.C.red, 2.4, 0.9, true), dev: lines(G.C.red, 3.4, 0.95),
-    cloud: points(N), pairs: points(48), tapP: points(1) };
+    ted: lines(ink, 3.0, 0.9), lat: lines(ink, 1.6, 0.3), cloud: points(N + F.pw * F.ph), pairs: points(48), tapP: points(1), hlP: points(4),
+    fph, fctx, fid: fctx.createImageData(F.pw, F.ph), fkey: "" };
+}
+function filtered(t) {
+  const F3 = G.F3, F = F3.F, M = F3.Mf(t), key = M.flat().map((v) => v.toFixed(4)).join();
+  if (key === X.fkey) return X.fph;
+  const d = X.fid.data;
+  for (let i = 0; i < F.pw * F.ph; i++) { const c = F3.fcol(M, F3.rgbAt(i % F.pw, Math.floor(i / F.pw))); d[i * 4] = c[0]; d[i * 4 + 1] = c[1]; d[i * 4 + 2] = c[2]; d[i * 4 + 3] = 255; }
+  X.fctx.putImageData(X.fid, 0, 0); X.fkey = key;
+  return X.fph;
+}
+// 照片模式的屏幕：滤镜后的照片、扫描线、快门、被高亮像素的圈、下沿的工具条
+function drawPhoto(c, t, sx, sy) {
+  const F3 = G.F3, F = F3.F, P = F.phone, b = G.D.b;
+  c.imageSmoothingEnabled = true; c.drawImage(filtered(t), sx, sy, P.sw, P.sh);
+  if (b.scan && t > b.scan[0] && t < b.scan[1] + 0.4) {
+    const y = sy + P.sh * Math.min(1, (t - b.scan[0]) / (b.scan[1] - b.scan[0])), a = 1 - seg(t, b.scan[1], b.scan[1] + 0.4, E.sine);
+    c.globalAlpha = 0.3 * a; c.fillStyle = "#FFFFFF"; c.fillRect(sx, y - 0.35, P.sw, 0.7);
+    c.globalAlpha = 0.95 * a; c.fillRect(sx, y - 0.08, P.sw, 0.16); c.globalAlpha = 1;
+  }
+  for (const h of F3.hl(t)) {
+    const [u, v] = F3.pixUV(h.px, h.py), x = P.w / 2 + u, y = P.h / 2 - v;
+    c.globalAlpha = h.a; c.lineWidth = 0.34; c.strokeStyle = "rgba(255,255,255,0.9)"; c.beginPath(); c.arc(x, y, 0.9, 0, 2 * Math.PI); c.stroke();
+    c.lineWidth = 0.18; c.strokeStyle = G.C.red; c.stroke(); c.globalAlpha = 1;
+  }
+  const s2 = b.shut2 === undefined ? 0 : 1 - clamp01(Math.abs(t - b.shut2) / 0.14);
+  if (s2 > 0) { c.fillStyle = `rgba(10,10,12,${(0.9 * s2).toFixed(3)})`; c.fillRect(sx, sy, P.sw, P.sh); }
+  const U = F3.ui(t);
+  if (!U) return;
+  const hb = 2.1, y0 = sy, keys = ["u.warm", "u.bw", "u.undo"]; // 工具条在屏幕上沿（天空处），不挡草地里要圈的像素
+  c.globalAlpha = U.a; c.fillStyle = "rgba(18,20,24,0.66)"; c.fillRect(sx, y0, P.sw, hb);
+  for (let i = 0; i < 3; i++) {
+    const x = sx + P.sw * [0.22, 0.5, 0.78][i] + (i === 2 ? 0.35 * U.shake : 0), y = y0 + hb / 2, str = G.T[keys[i]];
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.font = `500 ${(1.15 * PXU).toFixed(1)}px "Noto Sans SC"`;
+    const w = c.measureText(str).width / PXU; c.restore();
+    if (U.on === i) { c.fillStyle = "rgba(255,255,255,0.92)"; c.beginPath(); c.roundRect(x - w / 2 - 0.65, y - 0.82, w + 1.3, 1.64, 0.82); c.fill(); }
+    c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.font = `500 ${(1.15 * PXU).toFixed(1)}px "Noto Sans SC"`; c.textAlign = "center"; c.textBaseline = "middle";
+    c.fillStyle = U.on === i ? "#1E2638" : "rgba(255,255,255,0.92)"; c.fillText(str, x * PXU, y * PXU); c.restore();
+    if (U.rip && U.rip.btn === i) { c.globalAlpha = U.a * (1 - U.rip.u); c.strokeStyle = "#FFFFFF"; c.lineWidth = 0.16; c.beginPath(); c.arc(x, y, 0.6 + 2.0 * U.rip.u, 0, 2 * Math.PI); c.stroke(); c.globalAlpha = U.a; }
+  }
+  c.globalAlpha = 1;
 }
 
 // 手机屏幕：照片 → 取景（拍色卡）→ 拍下的色卡（随校正矩阵变色）；点开的像素画一个红圈
@@ -95,8 +137,8 @@ function drawPhone(t) {
   c.fillStyle = "#23272E"; c.beginPath(); c.roundRect(0, 0, P.w, P.h, 1.8); c.fill();
   c.fillStyle = "#3A404A"; c.beginPath(); c.arc(sx * 0.5, P.h / 2, 0.35, 0, 2 * Math.PI); c.fill(); // 前置摄像头
   c.save(); c.beginPath(); c.rect(sx, sy, P.sw, P.sh); c.clip();
-  const [m0, shot] = b.camMode || [Infinity, Infinity];
-  if (t < m0) { c.imageSmoothingEnabled = true; c.drawImage(X.photo, sx, sy, P.sw, P.sh); }
+  const [m0, shot] = b.camMode || [Infinity, Infinity], pb = b.photoBack ?? Infinity;
+  if (t < m0 || t >= pb + 0.4) drawPhoto(c, t, sx, sy);
   else { // 取景框里是纸上的色卡；拍下后，屏幕上的颜色按当前校正矩阵算
     c.fillStyle = "#E9E4D8"; c.fillRect(sx, sy, P.sw, P.sh);
     const M = t < shot ? [[1, 0, 0], [0, 1, 0], [0, 0, 1]] : F3.Mu(t), cols = F.cap.map((q) => F3.mul(M, q)), [cw, ch] = cardDims(F.card), k = (P.sh * 0.84) / ch;
@@ -105,6 +147,7 @@ function drawPhone(t) {
     if (t < shot + 0.1) { c.fillStyle = "#FFFFFF"; c.beginPath(); c.arc(sx + P.sw - 1.5, P.h / 2, 0.85, 0, 2 * Math.PI); c.fill(); }
     const ir = 1 - clamp01(Math.abs(t - shot) / 0.14); // 快门：屏幕暗一下（只在屏幕里，不闪全屏）
     if (ir > 0) { c.fillStyle = `rgba(10,10,12,${(0.9 * ir).toFixed(3)})`; c.fillRect(sx, sy, P.sw, P.sh); }
+    if (t >= pb) { c.globalAlpha = seg(t, pb, pb + 0.4, E.sine); drawPhoto(c, t, sx, sy); c.globalAlpha = 1; }
   }
   c.restore();
   if (b.tap && t >= b.tap[0] && t < b.axnOut + 0.5) { // 点开的像素
@@ -140,10 +183,29 @@ export function update3e(t, k) {
     for (const [a, q] of rest) ed.push(...V(...a), ...V(...q));
   }
   X.edges.set(ed); X.axes.set(ax);
-  // 点云（3b 起退为背景）；点开的那个像素点大一号
+  // 滤镜把整个颜色空间搬了家：单位立方体乘 Mf 成平行六面体（带 3×3×3 的格），原立方体退成参照
+  const dU = on ? F3.defU(F3.Mf(t)) : 0;
+  X.edges.m.opacity = 0.55 * (1 - 0.5 * dU);
+  if (dU > 0.003) {
+    const TV = (x, y, z) => F3.tcube(t, x, y, z), te = [], la = [];
+    const E12 = [[[0, 0, 0], [1, 0, 0]], [[0, 0, 0], [0, 1, 0]], [[0, 0, 0], [0, 0, 1]], [[1, 0, 0], [1, 1, 0]], [[0, 1, 0], [1, 1, 0]], [[1, 0, 0], [1, 0, 1]],
+      [[0, 1, 0], [0, 1, 1]], [[1, 1, 0], [1, 1, 1]], [[0, 0, 1], [1, 0, 1]], [[0, 0, 1], [0, 1, 1]], [[1, 0, 1], [1, 1, 1]], [[0, 1, 1], [1, 1, 1]]];
+    for (const [a, q] of E12) te.push(...TV(...a), ...TV(...q));
+    for (let i = 0; i <= 3; i++) for (let j = 0; j <= 3; j++) {
+      if ((i === 0 || i === 3) && (j === 0 || j === 3)) continue; // 外棱已画
+      const u = i / 3, v = j / 3;
+      la.push(...TV(0, u, v), ...TV(1, u, v), ...TV(u, 0, v), ...TV(u, 1, v), ...TV(u, v, 0), ...TV(u, v, 1));
+    }
+    X.ted.set(te); X.lat.set(la); X.ted.m.opacity = 0.9 * dU; X.lat.m.opacity = 0.3 * dU;
+  } else { X.ted.set([]); X.lat.set([]); }
+  // 点云（3b 起退为背景，3c 回到前景）；3d 起扫描线扫过的像素全部落进来；点开的那个像素点大一号
   const cl = F3.cloud(t); let n = 0;
   for (const q of cl) { if (q.k === F.tapK) continue; X.cloud.set(n++, q.p, q.c, 0.62, 0, q.a); }
+  F3.denseEach(t, (p, c, a, fr) => X.cloud.set(n++, p, c, 0.42 + 0.7 * fr * fr, 0, a));
   X.cloud.done(n); X.cloud.o.material.uniforms.uS.value = uS;
+  const H = F3.hl(t);
+  H.forEach((h, i) => X.hlP.set(i, F3.cubeW(t, h.c), h.c, 1.3, 0, h.a));
+  X.hlP.done(H.length); X.hlP.o.material.uniforms.uS.value = uS; X.hlP.o.renderOrder = 4;
   const tp = cl.find((q) => q.k === F.tapK);
   if (tp) {
     const pl = Math.max(0, ...F3.sprites(G.T, t).filter((s) => s.id.startsWith("axv")).map((s) => s.pulse || 0));

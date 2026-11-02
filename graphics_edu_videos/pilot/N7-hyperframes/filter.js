@@ -19,31 +19,84 @@ export function makeF3(W, D) {
   // ---- 颜色立方体：黑角在 o，红 +x、绿 +y、蓝 +z；pop 为立起的程度 ----
   const pop = (t) => tr(D, "cube", t);
   const cubeW = (t, c) => [F.cube.o[0] + (c[0] / 255) * F.cube.e, F.cube.o[1] + (c[1] / 255) * F.cube.e, PAGE_Z + (c[2] / 255) * F.cube.e * pop(t)];
-  // ---- 点云：第 k 个采样像素从屏幕飞进立方体（弧线），之后停在它的颜色位置 ----
+  // ---- 滤镜矩阵 Mf(t)（3c 起）：每个像素的颜色乘它；立方体里的点就是颜色本身，所以跟着挪 ----
+  const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+  const mul = (M, c) => M.map((r) => r[0] * c[0] + r[1] * c[1] + r[2] * c[2]);
+  const Mf = (t) => tr(D, "filt", t, I3);
+  const fcol = (M, c) => mul(M, c).map((v) => Math.max(0, Math.min(255, v)));
+  const defU = (M) => { let s = 0; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) s += Math.abs(M[i][j] - I3[i][j]); return clamp01(s * 4); };
+  // ---- 点云：第 k 个采样像素从屏幕飞进立方体（弧线），之后停在它（滤镜后）的颜色位置 ----
   const N = F.nx * F.ny, cols = Array.from({ length: N }, (_, k) => rgbAt(...sampPix(k)));
-  function flyAt(t, k, t0) {
-    const u = seg(t, t0, t0 + F.fly, E.io2), [px, py] = sampPix(k), a = scrW(t0, ...pixUV(px, py)), c = cubeW(t, cols[k]);
+  function flyAt(t, k, t0, M = Mf(t)) {
+    const u = seg(t, t0, t0 + F.fly, E.io2), [px, py] = sampPix(k), a = scrW(t0, ...pixUV(px, py)), c = cubeW(t, fcol(M, cols[k]));
     const h = F.fh[k] * Math.sin(Math.PI * u);
     return [lerp(a[0], c[0], u), lerp(a[1], c[1], u), lerp(a[2], c[2], u) + h];
   }
   function cloud(t) {
-    const out = [], fa = tr(D, "cloudA", t, 1);
+    const out = [], fa = tr(D, "cloudA", t, 1), M = Mf(t);
     for (let k = 0; k < N; k++) {
       const t0 = k === F.tapK ? b.fly1[0] : b.pour[0] + F.fdt[k];
       if (t < t0) continue;
-      out.push({ k, p: flyAt(t, k, t0), c: cols[k], a: fa, fly: t < t0 + F.fly });
+      out.push({ k, p: flyAt(t, k, t0, M), c: fcol(M, cols[k]), a: fa, fly: t < t0 + F.fly });
     }
     return out;
   }
+  // 3d：扫描线扫过的每一行，原图的全部像素都落进立方体（点云由稀变密）；fn(位置, 颜色, 不透明度)
+  function denseEach(t, fn) {
+    const s = tr(D, "scan", t);
+    if (s <= 0) return;
+    const M = Mf(t);
+    for (let py = 0; py < F.ph; py++) {
+      const d = s - (py + 0.5) / F.ph, a = clamp01(d / 0.04), fresh = 1 - clamp01(d / 0.18); // 刚扫过的一行先大后小：亮一下
+      if (a <= 0) break;
+      for (let px = 0; px < F.pw; px++) { const c = fcol(M, rgbAt(px, py)); fn(cubeW(t, c), c, a, fresh); }
+    }
+  }
+  // 被高亮的像素：照片上画圈、立方体里点放大（同一个像素两处同时亮）
+  const C3 = D.f3c;
+  function hl(t) {
+    const out = [];
+    if (!C3) return out;
+    for (const [t0, t1, ks] of C3.hl) {
+      const a = W.win(t, t0, t1, 0.35, 0.4);
+      if (a > 0.003) for (const [px, py] of ks) out.push({ px, py, a, c: fcol(Mf(t), rgbAt(px, py)) });
+    }
+    return out;
+  }
+  // 手机下沿的工具条：按钮 0 暖色、1 黑白、2 撤销；返回当前选中的按钮、点按的涟漪、按了没反应时的抖动
+  function ui(t) {
+    if (!C3 || t < b.tbar) return null;
+    let on = -1, rip = null, shake = 0;
+    for (const [t0, btn, ok] of C3.taps) {
+      if (t < t0) break;
+      if (ok) on = btn === 2 ? -1 : btn;
+      const u = (t - t0) / 0.5;
+      if (u < 1) rip = { btn, u };
+      if (!ok && t - t0 < 0.5) shake = Math.sin((t - t0) * 40) * (1 - (t - t0) / 0.5);
+    }
+    return { a: seg(t, b.tbar, b.tbar + 0.4, E.sine), on, rip, shake };
+  }
+  // 纸上的滤镜矩阵：换一个矩阵时旧的数先淡去，新的数逐个写出
+  function fmAt(t) {
+    if (!C3) return null;
+    const S = C3.fm.states;
+    let i = -1;
+    for (let j = 0; j < S.length; j++) if (t >= S[j][0]) i = j;
+    if (i < 0) return null;
+    const [w0, w1, vals] = S[i], old = i > 0 ? S[i - 1][2] : null;
+    return { vals, old, oldA: old ? 1 - seg(t, w0, w0 + 0.25, E.sine) : 0, rev: seg(t, w0 + (old ? 0.25 : 0), w1, E.lin) };
+  }
+  // 变形后的颜色空间：单位立方体的八个角乘 Mf（3c 起与原立方体对照）
+  const tcube = (t, x, y, z) => cubeW(t, mul(Mf(t), [x * 255, y * 255, z * 255]));
   // ---- 色卡：24 个点对（真实 = 实心点，拍出 = 空心圈）；校正矩阵 M(u) = I + u(CCM − I) ----
   const Mu = (t) => { const u = tr(D, "solve", t); return F.ccm.map((r, i) => r.map((v, j) => lerp(i === j ? 1 : 0, v, u))); };
-  const mul = (M, c) => M.map((r) => r[0] * c[0] + r[1] * c[1] + r[2] * c[2]);
   const shown = (t) => (t < b.pairs[0] ? 0 : Math.min(24, Math.floor((t - b.pairs[0]) / b.pairs[1]) + 1));
+  const clrA = (t) => (b.clr === undefined ? 1 : 1 - seg(t, b.clr, b.clr + 0.6, E.sine)); // 3c 开头：3b 的推导淡去
   function pairs(t) {
-    const M = Mu(t), n = shown(t), out = [];
+    const M = Mu(t), n = clrA(t) > 0.003 ? shown(t) : 0, out = [];
     for (let i = 0; i < n; i++) {
       const c = mul(M, F.cap[i]).map((v) => Math.max(0, Math.min(255, v))), t0 = b.pairs[0] + i * b.pairs[1];
-      out.push({ i, tp: cubeW(t, F.ref[i]), cp: cubeW(t, c), cc: c, a: seg(t, t0, t0 + 0.25, E.o2), pulse: Math.sin(Math.PI * clamp01((t - t0) / 0.5)) });
+      out.push({ i, tp: cubeW(t, F.ref[i]), cp: cubeW(t, c), cc: c, a: seg(t, t0, t0 + 0.25, E.o2) * clrA(t), pulse: Math.sin(Math.PI * clamp01((t - t0) / 0.5)) });
     }
     return out;
   }
@@ -54,13 +107,18 @@ export function makeF3(W, D) {
   const fmt2 = (v) => (v < 0 ? "−" : "") + Math.abs(v).toFixed(2);
   function labels(T, t) {
     const out = [], push = (id, page, str, p, size, align, alpha, col = "hand") => out.push({ id, page, str, p, size, align, alpha, col, box: W.textBox(str, p, size, align) });
-    if (t >= b.pairs[0]) { // 方程个数随色块逐个点亮计数：每块 3 个
+    const ca = clrA(t);
+    if (t >= b.pairs[0] && ca > 0.003) { // 方程个数随色块逐个点亮计数：每块 3 个
       const n = 3 * shown(t), q = F.eqc;
-      push("eqc", "e1", `${n} ${T["p.eqn"]}`, q.p, q.size, "left", seg(t, b.pairs[0], b.pairs[0] + 0.3, E.sine));
+      push("eqc", "e1", `${n} ${T["p.eqn"]}`, q.p, q.size, "left", seg(t, b.pairs[0], b.pairs[0] + 0.3, E.sine) * ca);
     }
-    if (t >= b.devShow) {
-      const q = F.devL, a = seg(t, b.devShow, b.devShow + 0.4, E.sine);
+    if (t >= b.devShow && ca > 0.003) {
+      const q = F.devL, a = seg(t, b.devShow, b.devShow + 0.4, E.sine) * ca;
       push("dev", "e1", `${T["p.dev"]} ${dev(t).toFixed(1)}`, q.p, q.size, "left", a, "red");
+    }
+    if (C3 && t >= b.cnt[0] && t <= b.cnt[1]) { // 3d：扫描线扫到哪，像素数就数到哪（换算成一张 1200 万像素的照片）
+      const q = C3.cnt, n = Math.round(1200 * Math.min(1, tr(D, "scan", t)));
+      push("cnt", "e0", `${T["p.px"]} ${n} ${T["p.wan"]}`, q.p, q.size, "left", W.win(t, b.cnt[0], b.cnt[1], 0.3, 0.4));
     }
     return out;
   }
@@ -79,14 +137,22 @@ export function makeF3(W, D) {
       out.push({ id: "axB", str: T["p.B"], p: [o[0] - 0.6, o[1], z0 + e * p + 1.6], size: 2.2, alpha: nameA });
     }
     const [a0, dt] = b.axn, c = F.tap, fo = 1 - seg(t, b.axnOut, b.axnOut + 0.4, E.sine);
-    const pos = [[o[0] + (c[0] / 255) * e + 1.5, o[1] + 1.2, z0], [o[0] - 2.2, o[1] + (c[1] / 255) * e, z0], [o[0] - 2.4, o[1], z0 + (c[2] / 255) * e]];
+    const pos = [[o[0] + (c[0] / 255) * e + 1.5, o[1] + 1.2, z0], [o[0] - 2.2, o[1] + (c[1] / 255) * e + 0.8, z0], [o[0] - 2.4, o[1] - 0.6, z0 + (c[2] / 255) * e]];
     for (let i = 0; i < 3; i++) {
       const a = seg(t, a0 + i * dt, a0 + i * dt + 0.3, E.sine) * fo;
       if (a > 0) out.push({ id: "axv" + i, str: String(c[i]), p: pos[i], size: 1.9, alpha: a, red: true, pulse: Math.sin(Math.PI * clamp01((t - a0 - i * dt) / 0.45)) });
+    }
+    // 3e：红花与绿草落到同一个灰点上方，先写「同一种灰」，按撤销不动后换成「红？绿？」
+    if (C3 && b.same) {
+      const g = cubeW(t, fcol(Mf(t), F.tap)), p = [g[0] + 4.8, g[1], g[2] - 1.6]; // 写在灰线右下方的空处，不压线、不碰棱名
+      const a1 = W.win(t, b.same[0], b.same[1], 0.35, 0.3), a2 = W.win(t, b.rg[0], b.rg[1], 0.35, 0.4);
+      if (a1 > 0) out.push({ id: "gray1", str: T["p.gray1"], p, size: 2.0, alpha: a1 });
+      if (a2 > 0) out.push({ id: "rg", str: T["p.rg"], p, size: 2.2, alpha: a2, red: true, pulse: Math.sin(Math.PI * clamp01((t - b.rg[0]) / 0.5)) });
     }
     return out;
   }
   const cubeCorners = (t) => { const r = []; for (const x of [0, 255]) for (const y of [0, 255]) for (const z of [0, 255]) r.push(cubeW(t, [x, y, z])); return r; };
   const phoneCorners = (t) => [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([u, v]) => scrW(t, (u * F.phone.w) / 2, (v * F.phone.h) / 2));
-  return { F, rgbAt, pose, topZ, scrW, pixUV, sampPix, pop, cubeW, cloud, flyAt, Mu, mul, pairs, dev, pulseOf, labels, mxVals, sprites, cubeCorners, phoneCorners, shown, PAGE_Z };
+  return { F, C3, rgbAt, pose, topZ, scrW, pixUV, sampPix, pop, cubeW, cloud, flyAt, Mu, mul, pairs, dev, pulseOf, labels, mxVals, sprites, cubeCorners, phoneCorners, shown, PAGE_Z,
+    Mf, fcol, defU, denseEach, hl, ui, fmAt, tcube, clrA };
 }

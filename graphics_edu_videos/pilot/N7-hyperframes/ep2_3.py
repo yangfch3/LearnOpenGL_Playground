@@ -110,7 +110,7 @@ def seg3a():
     h0 = tl.t
     ann("fq", "e1", [2.0, 27.4], 2.0, key="p.fq", align="left", t0=h0, w=[h0, h0 + 1.6])
     tl.t = h0 + 1.6 + read_need(TX["p.fq"]) - 0.6
-    s1 = tl.say("f1", hold=4.2)
+    s1 = tl.say("fa1", hold=4.2)
     tl.cam(s1, 2.4, ease="io3", **C_3D)
     at("foot", [s1 + 0.2, s1 + 0.9]); sfx(s1 + 0.2, "pencil", 0.7)  # 立方体的底先用铅笔画在纸上
     track("cube", 0.0, (s1 + 1.0, s1 + 2.4, 1.0, "o3")); sfx(s1 + 1.0, "rise", 1.4)
@@ -129,7 +129,7 @@ def seg3a():
     at("drop", [f1 + 1.15, f1 + 1.75]); sfx(f1 + 1.15, "pencil", 0.6)
     at("axn", [f1 + 1.8, 0.5])  # 三条棱上的读数依次出现，与纸上那三个数同时亮一下
     for i in range(3): sfx(f1 + 1.8 + 0.5 * i, "mallet", [523, 659, 784][i])
-    s2 = tl.say("f2", hold=3.0)
+    s2 = tl.say("fa2", hold=3.0)
     at("axnOut", s2 + 0.1)
     at("pour", [s2 + 0.3, s2 + 0.3 + 3.2 + 1.1]); sfx(s2 + 0.3, "sand", 4.2)
     tl.cam(s2 + 0.3, 5.0, ease="sine", yaw=-7.0)  # 轻摇：看出点云是立体的
@@ -139,7 +139,7 @@ def seg3a():
 def seg3b(rd):
     s = tl.start("3b")
     note_ticks(0, s + 0.3)
-    s1 = tl.say("f3", pre=1.0, hold=0.6)
+    s1 = tl.say("fa3", pre=1.0, hold=0.6)
     for id_, *_ in rd: end_at(get(id_), s1 + 0.3)
     track("cloudA", 1.0, (s1, s1 + 0.8, 0.06))
     track("card", [-92.0, CARD["c"][1]], (s1 + 0.2, s1 + 1.2, CARD["c"], "o3")); sfx(s1 + 0.2, "slide", 1.0)
@@ -148,7 +148,7 @@ def seg3b(rd):
     sfx(s1 + 1.4, "whoosh", 1.0); sfx(s1 + 3.1, "whoosh", 1.0); sfx(s1 + 4.1, "tick", 900)
     at("camMode", [s1 + 1.4, s1 + 2.7])  # 取景 → 快门
     sfx(s1 + 2.7, "shutter")
-    s2 = tl.say("f4", pre=0.3, hold=0.6)
+    s2 = tl.say("fa4", pre=0.3, hold=0.6)
     at("pairs", [s2 + 0.5, 0.12])
     for i in range(24): sfx(s2 + 0.5 + 0.12 * i, "mallet", 392 * 2 ** (i / 24))
     # 图例写在它所指的东西旁边：● 真实 = 色卡，○ 拍出 = 手机屏幕
@@ -168,7 +168,7 @@ def seg3b(rd):
     t += 1.6
     track("solve", 0.0, (t, t + 4.5, 1.0)); sfx(t, "descend", 4.5)
     tl.t = t + 4.7
-    s3 = tl.say("f5", hold=2.0)
+    s3 = tl.say("fa5", hold=2.0)
     ann("ccm", "e1", [m["c"][0], m["box"][1] - 2.0], 2.2, key="p.ccm", col="red", hl=True, t0=s3 + 0.4, w=[s3 + 0.4, s3 + 1.3])
     tl.t += 1.2
 
@@ -191,4 +191,6 @@ def run():
     assert NOTE["h"] / 2 - 3.6 - 4 * NOTE["dy"] - NOTE["size"] * 0.6 >= -NOTE["h"] / 2 + 0.4, "便签五行出下沿"
     rd = seg3a()
     seg3b(rd)
+    import ep2_3c
+    ep2_3c.run(P)
     print("3 滤镜：偏差 %.1f → %.1f，tapK %d %s，同灰草 %d" % (rms[0], rms[-1], ph["tapK"], ph["tap"], ph["grayK"]))

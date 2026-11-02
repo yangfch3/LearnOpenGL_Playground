@@ -19,14 +19,14 @@ function e0(t) {
   const cd = tr(G.D, "card", t, [-92, F.card.c[1]]), cw = 6 * F.card.cell + 5 * F.card.gap + 2 * F.card.pad, ch = 4 * F.card.cell + 3 * F.card.gap + 2 * F.card.pad;
   if (cd[0] > -48 - cw) shadow(cd[0], cd[1], cw, ch, 0, F.card.z + 0.3, 0.28);
   shadow(p.x, p.y, F.phone.w, F.phone.h, F.phone.rot, F.phone.th + p.lift);
-  if (t >= b.pairs[0]) { // 图例贴着它指的东西：色卡旁 ● 真实，手机旁 ○ 拍出（与立方体里的点同形）
-    const a = seg(t, b.pairs[0], b.pairs[0] + 0.4, E.sine), [lp, lq] = F.legend, c = G.ctx;
+  if (t >= b.pairs[0] && F3.clrA(t) > 0.003) { // 图例贴着它指的东西：色卡旁 ● 真实，手机旁 ○ 拍出（与立方体里的点同形）
+    const a = seg(t, b.pairs[0], b.pairs[0] + 0.4, E.sine) * F3.clrA(t), [lp, lq] = F.legend, c = G.ctx;
     ga(a); dot(lp, 0.55, G.C.ink); ga(1);
     ga(a); c.beginPath(); c.arc(lq[0], lq[1], 0.5, 0, 2 * Math.PI); c.strokeStyle = G.C.ink; c.lineWidth = lw(3.2); c.stroke(); ga(1);
   }
   // 点开的那个像素：纸上一块同色的小方块，后面写着它的三个数；三个数与立方体棱上的读数同时亮一下
-  if (t >= b.swatch && t < b.f3 + 0.6) {
-    const a = seg(t, b.swatch, b.swatch + 0.3, E.sine) * (1 - seg(t, b.f3, b.f3 + 0.3, E.sine)), s = F.swatch, c = G.ctx;
+  if (t >= b.swatch && t < b.fa3 + 0.6) {
+    const a = seg(t, b.swatch, b.swatch + 0.3, E.sine) * (1 - seg(t, b.fa3, b.fa3 + 0.3, E.sine)), s = F.swatch, c = G.ctx;
     ga(a); c.fillStyle = rgb(F.tap); c.fillRect(s[0] - 1.2, s[1] - 1.2, 2.4, 2.4); c.strokeStyle = G.C.hand; c.lineWidth = lw(3); c.strokeRect(s[0] - 1.2, s[1] - 1.2, 2.4, 2.4); ga(1);
     for (const sp of F3.sprites(G.T, t)) {
       if (!sp.id.startsWith("axv") || !(sp.pulse > 0)) continue;
@@ -82,21 +82,39 @@ function e1(t) {
     const u = seg(t, b.foot[0], b.foot[1], E.lin);
     line(partial([o, [o[0] + e, o[1]], [o[0] + e, o[1] + e], [o[0], o[1] + e], o], u), lw(2.6), C.pencil);
   }
-  if (t >= b.devShow) { // 偏差条：长度随偏差缩短（与上集外卖的「总面积」条同一画法）
-    const d = F3.dev(t), a = seg(t, b.devShow, b.devShow + 0.4, E.sine), q = F.devL.p;
+  const ca = F3.clrA(t);
+  if (t >= b.devShow && ca > 0.003) { // 偏差条：长度随偏差缩短（与上集外卖的「总面积」条同一画法）
+    const d = F3.dev(t), a = seg(t, b.devShow, b.devShow + 0.4, E.sine) * ca, q = F.devL.p;
     ga(0.75 * a); G.ctx.fillStyle = C.red; G.ctx.fillRect(q[0] + 10.4, q[1] - 0.5, 7.5 * (d / F.rms[0]) * a, 1.0); ga(1);
   }
-  if (t >= b.mxW[0]) { // 校正矩阵：先写九个 ?，解的过程中变成数；括号按两位小数的宽度留足
-    const m = F.mx, r = seg(t, b.mxW[0], b.mxW[1], E.lin), V = F3.mxVals(t), hw = m.dx + m.numW / 2 + 0.5, hh = m.dy + m.size * 0.7, c = G.ctx;
-    ga(Math.min(1, r * 3));
+  if (t >= b.mxW[0] && ca > 0.003) { // 校正矩阵：先写九个 ?，解的过程中变成数
+    const r = seg(t, b.mxW[0], b.mxW[1], E.lin), V = F3.mxVals(t);
+    mat3(F.mx, Math.min(1, r * 3) * ca, (i, j) => [V[i][j], clamp01(r * 9 - (i * 3 + j)), ca]);
+  }
+  const fm = F3.fmAt(t);
+  if (fm) { // 3c 起的滤镜矩阵：换矩阵时旧的数淡去、新的数写出
+    mat3(F3.C3.fm, fm.old ? 1 : Math.min(1, fm.rev * 3), (i, j) => [fm.vals[i][j], clamp01(fm.rev * 9 - (i * 3 + j)), 1]);
+    if (fm.oldA > 0) mat3(F3.C3.fm, 0, (i, j) => [fm.old[i][j], 1, fm.oldA]);
+  }
+  // 手机横跨书脊：右页这一半的影子
+  const p = F3.pose(t);
+  if (p.x + F.phone.w / 2 > 0) shadow(p.x, p.y, F.phone.w, F.phone.h, F.phone.rot, F.phone.th + p.lift);
+  note(t);
+}
+// 3×3 矩阵：括号按两位小数（含负号）的宽度留足；cell(i, j) = [字, 写出进度, 不透明度]
+function mat3(m, brA, cell) {
+  const C = G.C, c = G.ctx, hw = m.dx + m.numW / 2 + 0.5, hh = m.dy + m.size * 0.7;
+  if (brA > 0) {
+    ga(brA);
     for (const sg of [-1, 1]) {
       c.beginPath(); c.moveTo(m.c[0] + sg * hw, m.c[1] + hh); c.quadraticCurveTo(m.c[0] + sg * (hw + m.size * 0.3), m.c[1], m.c[0] + sg * hw, m.c[1] - hh);
       c.strokeStyle = C.hand; c.lineWidth = lw(3); c.stroke();
     }
     ga(1);
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++)
-      txt(V[i][j], [m.c[0] + (j - 1) * m.dx, m.c[1] - (i - 1) * m.dy], m.size, C.hand, { font: "print", reveal: clamp01(r * 9 - (i * 3 + j)) });
   }
-  note(t);
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+    const [s, rv, a] = cell(i, j);
+    txt(s, [m.c[0] + (j - 1) * m.dx, m.c[1] - (i - 1) * m.dy], m.size, C.hand, { font: "print", reveal: rv, alpha: a });
+  }
 }
 export const PAGES_E = { e0, e1 };

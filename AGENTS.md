@@ -45,7 +45,8 @@
 在 `graphics_edu_videos/` 下工作前先读：
 
 - [工程约定](graphics_edu_videos/docs/工程约定.md)：目录、临时文件、工具调用、已知问题、文本与多语言
-- [风格规范](graphics_edu_videos/docs/风格规范.md)：配色、字体、版式、动效、阅读时长
+- [制作 CheckList](graphics_edu_videos/docs/制作CheckList.md)：流程、各阶段关口与打分、画面口述
+- [创作原则](graphics_edu_videos/docs/创作原则.md)：讲述、画面、文字、声音，剧情片与科普片各自的经验，手法库
+- [风格规范](graphics_edu_videos/docs/风格规范.md)：对比度、字号、线宽、版式、动效、阅读时长、响度的通用数值底线
+- 做 LearnOpenGL 教学正片时加读 [LearnOpenGL 系列规范](graphics_edu_videos/docs/LearnOpenGL系列规范.md)：深色底配色、字体、管线图与代码卡、目录
 - [预研](graphics_edu_videos/docs/基于LearnOpenGL的图形学教学视频预研.md)：目标与受众、工具候选、音效、输出规格
-- 做剧情片时加读 [剧情片优秀经验沉淀](graphics_edu_videos/docs/剧情片优秀经验沉淀.md)：选题与结构、世界、镜头、角色动画、防穿模、声音、流程
-- 做科普片、教学片时加读 [科普片优秀经验沉淀](graphics_edu_videos/docs/科普片优秀经验沉淀.md)：目标与取舍、结构、演示、文字、流程、自查清单

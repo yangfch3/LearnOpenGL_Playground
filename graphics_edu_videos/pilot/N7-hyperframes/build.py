@@ -33,6 +33,7 @@ for a in ANIMALS:
 
 # ---- 校验：字幕停留 ≥ 阅读时长且互不重叠；段落起点在小节线上；矩阵、参数轨道、翻页各自不交叠 ----
 CAPS = tl.caps
+CAPS.sort(key=lambda c: c["t0"])  # 挂在动作上的字幕不按插入顺序
 for c in CAPS:
     assert c["t1"] - c["t0"] >= read_need(TX[c["k"]]) - 1e-9, ("字幕停留不足", c["k"])
     assert 96 <= c["box"][0] and c["box"][2] <= 1824, ("字幕出内容区", c["k"], c["box"])
@@ -55,11 +56,14 @@ D = dict(name=NAME, ep=ARGS.ep, col=COL, duration=duration, bar=BAR, segs=tl.seg
 write_js(K.ROOT / f"assets/data/{NAME}.js", "N7", D)
 esc = lambda s_: s_.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")  # noqa: E731
 divs = []
-for i, c in enumerate(CAPS):  # 「」里的词是关键词：红字 + 荧光笔底
+for i, c in enumerate(CAPS):  # 「」里的词是关键词：红字 + 荧光笔底；〔〕里的字跟着画面变（括号本身不显示）
     spans = ""
-    for part in re.split(r"(「[^」]*」)", TX[c["k"]]):
-        chs = "".join(f'<span class="c">{esc(ch)}</span>' for ch in (part[1:-1] if part.startswith("「") else part))
-        spans += f'<span class="c">「</span><span class="kw">{chs}</span><span class="c">」</span>' if part.startswith("「") else chs
+    assert ("〔" in TX[c["k"]]) == ("act" in c), ("〔〕与 act 要成对", c["k"])
+    for part in re.split(r"(「[^」]*」|〔[^〕]*〕)", TX[c["k"]]):
+        inner = part[1:-1] if part[:1] in ("「", "〔") else part
+        chs = "".join(f'<span class="c">{esc(ch)}</span>' for ch in inner)
+        spans += (f'<span class="c">「</span><span class="kw">{chs}</span><span class="c">」</span>' if part.startswith("「")
+                  else f'<span class="act">{chs}</span>' if part.startswith("〔") else chs)
     pos = "" if c["st"] == "say" else f' style="left: {c["x"]}px; top: {c["y"]}px"'
     tape = '<span class="tape"></span>' if c["st"] == "title" else ""
     divs.append(f'      <div id="cap{i}" class="cap {c["st"]} clip" data-start="{c["t0"]}" data-duration="{round(c["t1"] - c["t0"], 3)}" '
